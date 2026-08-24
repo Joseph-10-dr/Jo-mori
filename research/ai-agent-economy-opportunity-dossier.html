@@ -1,0 +1,866 @@
+<title>The Agent Economy Dossier</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --paper:#f2f1ea;
+  --paper-dim:#e7e3d6;
+  --surface:#ffffff;
+  --ink:#191a16;
+  --ink-2:#54564b;
+  --ink-3:#83816f;
+  --line:#d9d4c3;
+  --accent:#1f5c48;
+  --accent-soft:#dde8e0;
+  --flare:#b1420a;
+  --flare-soft:#f3ddd0;
+  --good:#1f5c48;
+  --warn:#9a6b12;
+  --bad:#a3301f;
+  --shadow: 0 1px 2px rgba(25,26,22,0.06), 0 8px 24px -12px rgba(25,26,22,0.18);
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#121309;
+    --paper-dim:#1b1c12;
+    --surface:#191a12;
+    --ink:#ece8d8;
+    --ink-2:#b3af9a;
+    --ink-3:#807c68;
+    --line:#34331f;
+    --accent:#5fbf9a;
+    --accent-soft:#1e2c23;
+    --flare:#ff9257;
+    --flare-soft:#2e2015;
+    --good:#5fbf9a;
+    --warn:#e0ac4b;
+    --bad:#ef7a68;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 10px 30px -14px rgba(0,0,0,0.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121309;
+  --paper-dim:#1b1c12;
+  --surface:#191a12;
+  --ink:#ece8d8;
+  --ink-2:#b3af9a;
+  --ink-3:#807c68;
+  --line:#34331f;
+  --accent:#5fbf9a;
+  --accent-soft:#1e2c23;
+  --flare:#ff9257;
+  --flare-soft:#2e2015;
+  --good:#5fbf9a;
+  --warn:#e0ac4b;
+  --bad:#ef7a68;
+  --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 10px 30px -14px rgba(0,0,0,0.7);
+}
+
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:16px;
+  line-height:1.6;
+}
+::selection{ background:var(--accent-soft); }
+
+h1,h2,h3,h4{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  text-wrap:balance;
+  color:var(--ink);
+  margin:0 0 .4em;
+}
+a{color:var(--accent);}
+p{margin:0 0 1em; max-width:66ch;}
+.mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; }
+.tnum{ font-variant-numeric: tabular-nums; }
+
+/* ============ SHELL ============ */
+.shell{
+  display:grid;
+  grid-template-columns: 260px minmax(0,1fr);
+  max-width:1280px;
+  margin:0 auto;
+}
+@media (max-width: 920px){
+  .shell{ grid-template-columns: 1fr; }
+}
+
+/* ---- sidebar ---- */
+.sidebar{
+  position:sticky;
+  top:0;
+  align-self:start;
+  height:100vh;
+  overflow-y:auto;
+  padding:2rem 1.25rem 2rem 1.75rem;
+  border-right:1px solid var(--line);
+  font-size:.86rem;
+}
+@media (max-width: 920px){
+  .sidebar{ position:static; height:auto; border-right:none; border-bottom:1px solid var(--line); padding:1.25rem 1.25rem 1rem; }
+}
+.brand{
+  display:flex; align-items:center; gap:.55rem;
+  margin-bottom:1.5rem;
+}
+.brand-mark{
+  width:30px;height:30px;border-radius:7px;
+  background:var(--accent); color:var(--paper);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono"; font-weight:600; font-size:.8rem;
+  flex:none;
+}
+.brand-name{ font-family:"Fraunces"; font-weight:600; font-size:1.02rem; line-height:1.15; }
+.brand-sub{ color:var(--ink-3); font-size:.72rem; }
+
+.toc-label{
+  text-transform:uppercase; letter-spacing:.08em; font-size:.68rem;
+  color:var(--ink-3); margin:1.3rem 0 .5rem;
+}
+.toc{ list-style:none; margin:0; padding:0; }
+.toc li{ margin:0; }
+.toc a{
+  display:block; padding:.32rem 0; color:var(--ink-2);
+  text-decoration:none; border-left:2px solid transparent; padding-left:.7rem;
+  margin-left:-.72rem;
+}
+.toc a:hover{ color:var(--ink); border-left-color:var(--line); }
+.toc .sub{ padding-left:1.5rem; font-size:.9em; }
+
+.legend{
+  margin-top:1.6rem; padding-top:1.1rem; border-top:1px solid var(--line);
+  font-size:.74rem; color:var(--ink-3); display:flex; flex-direction:column; gap:.4rem;
+}
+.legend .tag{ margin-right:.4rem; }
+
+/* ---- main ---- */
+main{ padding: 2.5rem clamp(1.25rem,4vw,4rem) 6rem; min-width:0; }
+.section{ padding-top:3.6rem; margin-top:-1.2rem; scroll-margin-top:1rem; }
+.section:first-of-type{ padding-top:0; }
+.kicker{
+  text-transform:uppercase; letter-spacing:.09em; font-size:.72rem;
+  color:var(--accent); font-family:"IBM Plex Mono"; font-weight:600;
+  margin-bottom:.6rem;
+}
+.section h2{ font-size:clamp(1.5rem,2.6vw,2rem); }
+.section > p.lede{ font-size:1.08rem; color:var(--ink-2); }
+
+/* ---- cover ---- */
+.cover{ padding-bottom:2.4rem; border-bottom:1px solid var(--line); margin-bottom:2.6rem; }
+.cover .kicker{ margin-bottom:1rem; }
+.cover h1{ font-size:clamp(2.1rem,5vw,3.2rem); max-width:18ch; }
+.cover .dek{ font-size:1.15rem; color:var(--ink-2); max-width:56ch; margin-top:.6rem; }
+.cover-meta{ display:flex; flex-wrap:wrap; gap:1.6rem; margin-top:1.6rem; font-size:.82rem; color:var(--ink-3); }
+.cover-meta b{ color:var(--ink-2); font-weight:600; }
+
+/* ---- tags / badges ---- */
+.tag{
+  display:inline-flex; align-items:center; gap:.3rem;
+  font-family:"IBM Plex Mono"; font-size:.68rem; font-weight:500;
+  padding:.16rem .5rem; border-radius:99px; letter-spacing:.02em;
+  white-space:nowrap;
+}
+.tag-fact{ background:var(--accent-soft); color:var(--accent); }
+.tag-projection{ background:var(--flare-soft); color:var(--flare); }
+
+/* ---- panels / cards ---- */
+.panel{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+  padding:1.3rem 1.5rem; box-shadow:var(--shadow);
+}
+.grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+@media (max-width:760px){ .grid-2,.grid-3{ grid-template-columns:1fr; } }
+
+.callout{
+  border-left:3px solid var(--accent); background:var(--accent-soft);
+  border-radius:0 8px 8px 0; padding:1rem 1.2rem; margin:1.4rem 0;
+}
+.callout.flare{ border-left-color:var(--flare); background:var(--flare-soft); }
+.callout p:last-child{ margin-bottom:0; }
+.callout .callout-label{ font-family:"IBM Plex Mono"; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); margin-bottom:.35rem; }
+
+/* ---- tech landscape cards ---- */
+.tech-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; margin-top:1.4rem; }
+@media (max-width:760px){ .tech-grid{ grid-template-columns:1fr; } }
+.tech-card{ border:1px solid var(--line); border-radius:var(--radius); padding:1.1rem 1.3rem; background:var(--surface); }
+.tech-card h4{ font-size:1.02rem; margin-bottom:.5rem; display:flex; align-items:baseline; justify-content:space-between; gap:.5rem; }
+.tech-card .stat{ font-family:"IBM Plex Mono"; color:var(--accent); font-size:.82rem; font-weight:600; }
+.tech-card p{ font-size:.92rem; color:var(--ink-2); margin-bottom:.5rem; }
+.tech-card .src{ font-size:.72rem; color:var(--ink-3); }
+
+/* ---- opportunity cards (rank list) ---- */
+.opp-card{
+  border:1px solid var(--line); border-radius:var(--radius); background:var(--surface);
+  padding:1.4rem 1.5rem 1.5rem; margin-bottom:1.1rem; box-shadow:var(--shadow);
+}
+.opp-head{ display:flex; align-items:flex-start; gap:1rem; margin-bottom:.7rem; }
+.opp-rank{
+  font-family:"IBM Plex Mono"; font-weight:600; font-size:1.4rem; color:var(--ink-3);
+  flex:none; width:2.2rem;
+}
+.opp-head h3{ font-size:1.22rem; margin-bottom:.15rem; }
+.opp-tagline{ color:var(--ink-2); font-size:.92rem; }
+.opp-score{
+  margin-left:auto; text-align:right; flex:none;
+}
+.opp-score .num{ font-family:"IBM Plex Mono"; font-weight:600; font-size:1.5rem; color:var(--accent); }
+.opp-score .lbl{ font-size:.65rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); }
+
+dl.fields{ display:grid; grid-template-columns:11rem 1fr; gap:.5rem 1rem; font-size:.9rem; margin:1rem 0 0; }
+dl.fields dt{ color:var(--ink-3); font-family:"IBM Plex Mono"; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; padding-top:.15rem; }
+dl.fields dd{ margin:0; color:var(--ink); }
+@media (max-width:640px){ dl.fields{ grid-template-columns:1fr; } dl.fields dt{ padding-top:.6rem; } }
+
+/* ---- scoring table ---- */
+.table-wrap{ overflow-x:auto; margin:1.4rem 0; border:1px solid var(--line); border-radius:var(--radius); }
+table.scores{ border-collapse:collapse; width:100%; min-width:900px; font-size:.82rem; }
+table.scores th, table.scores td{ padding:.5rem .6rem; text-align:center; border-bottom:1px solid var(--line); }
+table.scores th{ font-family:"IBM Plex Mono"; font-weight:600; font-size:.68rem; text-transform:uppercase; letter-spacing:.02em; color:var(--ink-3); background:var(--paper-dim); position:sticky; top:0; }
+table.scores td.name{ text-align:left; font-family:"Fraunces"; font-weight:600; font-size:.88rem; min-width:210px; color:var(--ink); }
+table.scores td.overall{ font-family:"IBM Plex Mono"; font-weight:700; color:var(--accent); font-size:.95rem; }
+table.scores tr:last-child td{ border-bottom:none; }
+.cell-hi{ color:var(--good); font-weight:600; }
+.cell-mid{ color:var(--warn); }
+.cell-lo{ color:var(--bad); }
+
+/* ---- timeline ---- */
+.timeline{ display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin:1.6rem 0; }
+@media (max-width:760px){ .timeline{ grid-template-columns:1fr; } }
+.tl-stage{ border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); padding:1.1rem 1.2rem; position:relative; }
+.tl-year{ font-family:"IBM Plex Mono"; font-weight:700; color:var(--flare); font-size:1.1rem; }
+.tl-stage h4{ font-size:.95rem; margin:.3rem 0 .5rem; }
+.tl-stage p{ font-size:.85rem; color:var(--ink-2); margin-bottom:0; }
+.tl-stage:not(:last-child)::after{
+  content:""; position:absolute; top:1.4rem; right:-1.1rem; width:1rem; height:1px;
+  background:var(--line);
+}
+@media (max-width:760px){ .tl-stage::after{ display:none; } }
+
+/* ---- agent architecture diagram ---- */
+.orgchart{ display:flex; flex-direction:column; align-items:center; gap:0; margin:1.8rem 0; }
+.org-tier{ display:flex; justify-content:center; gap:.9rem; flex-wrap:wrap; width:100%; position:relative; padding:1rem 0; }
+.org-box{
+  background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  padding:.65rem .9rem; font-size:.8rem; text-align:center; min-width:118px;
+  box-shadow:var(--shadow);
+}
+.org-box.ceo{ border-color:var(--accent); background:var(--accent-soft); font-weight:600; font-family:"IBM Plex Mono"; min-width:200px; }
+.org-box .role{ font-weight:600; font-family:"IBM Plex Mono"; font-size:.72rem; color:var(--accent); display:block; margin-bottom:.2rem;}
+.org-connector{ width:1px; height:1.4rem; background:var(--line); margin:0 auto; }
+.org-bus{ width:min(100%,720px); height:1px; background:var(--line); margin:.2rem auto; position:relative; }
+
+/* ---- roadmap ---- */
+.roadmap{ display:grid; gap:1rem; margin:1.4rem 0; }
+.rm-row{ display:grid; grid-template-columns:8rem 1fr; gap:1rem; border-left:2px solid var(--line); padding-left:1.1rem; position:relative; }
+.rm-row::before{ content:""; position:absolute; left:-5px; top:.35rem; width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.rm-row .rm-when{ font-family:"IBM Plex Mono"; font-size:.78rem; color:var(--accent); font-weight:600; }
+@media (max-width:640px){ .rm-row{ grid-template-columns:1fr; } }
+
+/* ---- verdict ---- */
+.verdict{
+  border:1px solid var(--accent); border-radius:var(--radius); background:var(--accent-soft);
+  padding:1.8rem 2rem; margin-top:1.6rem;
+}
+.verdict h3{ font-size:1.15rem; }
+.verdict-answer{ font-family:"Fraunces"; font-size:1.3rem; font-weight:600; margin-bottom:.6rem; }
+
+/* ---- misc ---- */
+ul.tight, ol.tight{ margin:0 0 1em; padding-left:1.2rem; }
+ul.tight li, ol.tight li{ margin-bottom:.4rem; font-size:.95rem; }
+hr.rule{ border:none; border-top:1px solid var(--line); margin:2.6rem 0; }
+.small-caps{ font-variant:small-caps; }
+.sources{ font-size:.82rem; color:var(--ink-2); columns:2; column-gap:2rem; }
+@media (max-width:700px){ .sources{ columns:1; } }
+.sources li{ break-inside:avoid; margin-bottom:.5rem; }
+footer.colophon{ margin-top:4rem; padding-top:1.6rem; border-top:1px solid var(--line); font-size:.78rem; color:var(--ink-3); }
+
+@media (prefers-reduced-motion: no-preference){
+  .section{ animation: rise .5s ease both; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none; } }
+}
+</style>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">UL</div>
+      <div>
+        <div class="brand-name">Opportunity Dossier</div>
+        <div class="brand-sub">AI &amp; autonomous-systems strategy</div>
+      </div>
+    </div>
+
+    <div class="toc-label">Contents</div>
+    <ul class="toc">
+      <li><a href="#summary">Executive summary</a></li>
+      <li><a href="#landscape">Technology landscape</a></li>
+      <li><a href="#asymmetry">Where the gap is widening</a></li>
+      <li><a href="#top10">Ranked opportunities</a></li>
+      <li><a href="#scoring">Scoring matrix</a></li>
+      <li><a href="#futures">2026 → 2035 futures</a></li>
+      <li><a href="#deepdive">Deep dive: Uptime Ledger</a></li>
+      <li class="sub"><a href="#dd-model">Business model</a></li>
+      <li class="sub"><a href="#dd-architecture">Product architecture</a></li>
+      <li class="sub"><a href="#dd-agents">AI-agent org</a></li>
+      <li class="sub"><a href="#dd-stack">Tech stack &amp; MVP</a></li>
+      <li class="sub"><a href="#dd-gtm">Go-to-market &amp; pricing</a></li>
+      <li class="sub"><a href="#dd-roadmap">Roadmap</a></li>
+      <li class="sub"><a href="#dd-risk">Risks &amp; moat</a></li>
+      <li><a href="#verdict">The billion-dollar question</a></li>
+      <li><a href="#sources">Sources &amp; method</a></li>
+    </ul>
+
+    <div class="legend">
+      <div><span class="tag tag-fact">researched</span> a sourced, verifiable fact</div>
+      <div><span class="tag tag-projection">projection</span> my own forecast or estimate</div>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ================= COVER ================= -->
+    <div class="section cover" id="top">
+      <div class="kicker">Strategy research &middot; August 2026</div>
+      <h1>The Agent Economy's Missing Infrastructure</h1>
+      <p class="dek">A researched map of non-obvious, infrastructure-shaped businesses sitting at the intersection of autonomous AI agents, robotics, decentralized identity, and machine-to-machine commerce — ranked, scored, and stress-tested against one question: which of these could plausibly become a billion-dollar company, and why.</p>
+      <div class="cover-meta">
+        <div><b>Scope</b> AI agents · Web4 · DePIN · robotics · digital identity · M2M commerce</div>
+        <div><b>Method</b> 20+ live web searches, cross-checked against VC, patent, and market-report data</div>
+        <div><b>Posture</b> skeptical — facts and forecasts are labeled separately throughout</div>
+      </div>
+    </div>
+
+    <!-- ================= SUMMARY ================= -->
+    <section class="section" id="summary">
+      <div class="kicker">01 — Executive summary</div>
+      <h2>The web is quietly being rebuilt for machines, not people</h2>
+      <p class="lede">Three things happened at the same time in 2026: bots overtook humans as the majority of web traffic, the payment and identity rails for autonomous agents went from whitepaper to production, and physical robots started shipping in volumes large enough to need real infrastructure around them. Almost none of the resulting businesses look like a chatbot.</p>
+
+      <div class="callout">
+        <div class="callout-label">Headline finding</div>
+        <p>Cloudflare now reports that <b>57.4% of web requests are automated</b>, not human — the first time in the internet's history that bots have outnumbered people. <span class="tag tag-fact">researched</span> At the same time, the x402 machine-payment protocol crossed 69,000 active agents and 165 million transactions by April 2026, and McKinsey now estimates agentic commerce could influence <b>$3–5 trillion</b> in global commerce by 2030. <span class="tag tag-fact">researched</span> The infrastructure to identify, insure, pay, and adjudicate disputes between these agents is being assembled in real time — largely by a small number of incumbents (Visa, Mastercard, Coinbase, Experian, Stripe) — which is exactly where the interesting, less obvious gaps sit: everywhere those incumbents aren't looking yet.</p>
+      </div>
+
+      <p>Out of dozens of candidate opportunities, this dossier ranks ten that are genuinely infrastructure-, platform-, or marketplace-shaped rather than another AI wrapper. The top-ranked opportunity — <b>a neutral telemetry, incident-data, and parametric-insurance network for robot fleets</b> — sits deliberately away from the crowded agent-identity and AI-liability-insurance space, where Experian, Visa, Mastercard, Coinbase, and a wave of 2026 insurtech entrants (Klaimee, Corgi, Testudo, Armilla) are already moving fast. The physical-robot assurance layer has almost no dedicated competitor yet, a clear and growing paying customer, and a data moat that compounds the way Verisk's or Carfax's did in their respective industries.</p>
+    </section>
+
+    <!-- ================= LANDSCAPE ================= -->
+    <section class="section" id="landscape">
+      <div class="kicker">02 — Technology landscape</div>
+      <h2>What's actually moving, backed by evidence</h2>
+      <p class="lede">Eight forces, each confirmed independently through live research, define the terrain these opportunities sit on.</p>
+
+      <div class="tech-grid">
+        <div class="tech-card">
+          <h4>Agentic payments <span class="stat">$50M+ moved</span></h4>
+          <p>x402 (Coinbase, HTTP-native stablecoin micropayments for machines) hit 69,000 active agents and 165M transactions by April 2026; Stripe shipped its own "Machine Payments" preview in February 2026; the Linux Foundation launched a 40-member x402 Foundation in July 2026 including Visa, Mastercard, AWS and Google.</p>
+          <p class="src">Sources: Chainalysis, RZLT, eco.com, Linux Foundation coverage</p>
+        </div>
+        <div class="tech-card">
+          <h4>Agent identity &amp; trust <span class="stat">4 rival standards</span></h4>
+          <p>NIST/NCCoE, Ethereum's ERC-8004, the DIF's KYA-OS (formerly MCP-I), Visa's Trusted Agent Protocol, and Google's AP2 are all racing to define how an agent proves who it is and who it's acting for. Experian launched "Agent Trust" in April 2026, tying agent identity to verified consumer identity.</p>
+          <p class="src">Sources: NCCoE concept paper, DIF, Experian newsroom, arXiv 2604.23280</p>
+        </div>
+        <div class="tech-card">
+          <h4>Robot training-data bottleneck <span class="stat">$17.1B by 2030</span></h4>
+          <p>Teleoperation rigs cost $50–150K and yield under 200 demonstrations per worker per day. The real gap isn't volume, it's coverage of real-world variability — "robot data cannot be scraped or purchased from a broker; it has to be generated, task by task, environment by environment."</p>
+          <p class="src">Sources: Shaip, Digital Divide Data, TechCrunch (Physical Intelligence)</p>
+        </div>
+        <div class="tech-card">
+          <h4>AI &amp; robot liability insurance <span class="stat">95% of Q1 insurtech $</span></h4>
+          <p>AI startups captured 95.2% of all insurtech funding in Q1 2026 ($1.63B total). Klaimee ($5.5M seed, YC) insures autonomous software agents; Corgi raised $108M as a full-stack AI-native carrier. None of the funded players focus specifically on physical robot fleets.</p>
+          <p class="src">Sources: The Insurer, Insurance Business Mag, Corgi.insure</p>
+        </div>
+        <div class="tech-card">
+          <h4>DePIN &amp; decentralized compute <span class="stat">$9–40B cap, $2.2T TAM</span></h4>
+          <p>DePIN market cap estimates range $9–40B depending on methodology in 2026; Messari pegs long-run TAM at $2.2T by 2028. Decentralized GPU networks (Akash, io.net, Render, Aethir, Fluence) now offer 70–75% cost reductions vs. centralized cloud for suitable inference workloads.</p>
+          <p class="src">Sources: Messari, BlockEden, Spheron Network</p>
+        </div>
+        <div class="tech-card">
+          <h4>The power wall <span class="stat">40% of DCs power-constrained by 2027</span></h4>
+          <p>Electricity, not chips, is now the binding constraint on AI infrastructure. Gartner projects 40% of AI data centers will be power-constrained by 2027; interconnection queues stretch for years, pushing hyperscalers toward on-site generation and SMRs.</p>
+          <p class="src">Sources: Deloitte, Spheron, Gartner (via startuphub.ai)</p>
+        </div>
+        <div class="tech-card">
+          <h4>Humanoid robots <span class="stat">$6.2B → $165B by 2034</span></h4>
+          <p>The humanoid market is forecast to grow from $6.24B (2026) to $165B (2034); Goldman Sachs projects 1.4M units shipped by 2035. Robot maintenance runs 10–15% of purchase price annually on units costing $30–150K — and predictive-maintenance vendors already expect "uptime insurance" to be the biggest winner category.</p>
+          <p class="src">Sources: RoboZaps, Standard Bots, Goldman Sachs (via industry press)</p>
+        </div>
+        <div class="tech-card">
+          <h4>Prompt injection &amp; agent fraud <span class="stat">+340% YoY</span></h4>
+          <p>OWASP's 2026 LLM Security Report puts prompt-injection growth at 340% year-over-year, now the fastest-growing cyberattack category. It's structurally unfixable at the model level — LLMs can't reliably separate instructions from data — so the entire discipline has shifted from prevention to containment.</p>
+          <p class="src">Sources: Obsidian Security, Unit42 (Palo Alto Networks), OWASP</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ASYMMETRY ================= -->
+    <section class="section" id="asymmetry">
+      <div class="kicker">03 — Information asymmetry</div>
+      <h2>Where technology has outrun the businesses built on it</h2>
+      <p class="lede">Four gaps recur across the research, each one a business built for a world that no longer exists.</p>
+      <div class="grid-2">
+        <div class="panel">
+          <h4>The web still assumes a human reader</h4>
+          <p style="font-size:.92rem">Publishers, ad tech, CDNs, and analytics stacks were built around human attention. With bots at 57% of traffic, most sites have no way to identify, price, or license access to the agents reading them — Cloudflare's Pay Per Crawl is the first serious attempt, and it's barely a year old.</p>
+        </div>
+        <div class="panel">
+          <h4>Insurance underwriting has no data for autonomous loss</h4>
+          <p style="font-size:.92rem">Traditional carriers are, in their own underwriters' words, "silent, ambiguous, or exclusive" of autonomous software and physical robots. The actuarial tables that would price this risk don't exist yet because nobody is capturing structured, cross-manufacturer incident data.</p>
+        </div>
+        <div class="panel">
+          <h4>Robot data is a manufacturing process, not a scrape</h4>
+          <p style="font-size:.92rem">Every embodied-AI lab (Physical Intelligence, Skild, Cortex AI, Teleo) independently confirms the same thing: there is no shortcut. Data has to be generated per-task, per-environment, and the highest-value data — rare failures — is exactly what bulk-collection models are worst at capturing.</p>
+        </div>
+        <div class="panel">
+          <h4>Identity infrastructure is racing ahead of trust infrastructure</h4>
+          <p style="font-size:.92rem">Four competing agent-identity standards shipped within months of each other in 2026. Knowing <i>who</i> an agent is has outpaced knowing whether it can be <i>trusted</i>, what happens when it misbehaves, and who pays when a dispute between two agents can't be resolved by either party's terms of service.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TOP 10 ================= -->
+    <section class="section" id="top10">
+      <div class="kicker">04 — Ranked opportunities</div>
+      <h2>Ten infrastructure-shaped bets, ranked</h2>
+      <p class="lede">Each scored across twelve dimensions (methodology in the scoring matrix below). None of these are chatbots, generic SaaS, content generators, or trading bots — the brief explicitly ruled those out, and so did the research: they're already commoditizing.</p>
+
+      <!-- OPP 1 -->
+      <div class="opp-card" id="opp-1">
+        <div class="opp-head">
+          <div class="opp-rank">01</div>
+          <div>
+            <h3>Uptime Ledger — robot fleet telemetry, incident registry &amp; parametric insurance</h3>
+            <div class="opp-tagline">The "Verisk for robots": a neutral, cross-manufacturer data and risk layer for physical autonomous fleets.</div>
+          </div>
+          <div class="opp-score"><div class="num">7.4</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>Robot fleets (industrial arms, AMRs, humanoids) fail in undocumented, non-standardized ways. Nobody captures structured cross-manufacturer incident data, so nobody can price downtime or liability risk.</dd>
+          <dt>Who feels it</dt><dd>Fleet operators (logistics, manufacturing, warehousing) eating 10–15%/yr unplanned maintenance cost; insurers with no actuarial basis to underwrite robot fleets; manufacturers facing liability as autonomy increases.</dd>
+          <dt>Why it exists</dt><dd>Every OEM's fleet software is siloed and self-serving; no neutral third party has the trust or scale to aggregate telemetry across competing manufacturers the way Carfax or Verisk did for cars and property.</dd>
+          <dt>Why current fixes fail</dt><dd>OEM dashboards only see their own robots. Generic industrial-IoT predictive-maintenance tools (PTC, Samsara-style) weren't built for robot-specific failure modes or insurance-grade evidentiary data.</dd>
+          <dt>The fix</dt><dd>A lightweight, OEM-agnostic telemetry agent + normalized incident-severity schema, sold first as predictive-maintenance SaaS, then as the data backbone for parametric uptime insurance underwritten via an MGA partnership.</dd>
+          <dt>Who pays, how much</dt><dd>Fleet operators: $150–400/robot/month for SaaS. Insurers &amp; manufacturers: licensing fees for aggregate risk data. Later: 3–6%/yr of asset value as insurance premium.</dd>
+          <dt>Deep dive</dt><dd><a href="#deepdive">See full build-out below ↓</a></dd>
+        </dl>
+      </div>
+
+      <!-- OPP 2 -->
+      <div class="opp-card" id="opp-2">
+        <div class="opp-head">
+          <div class="opp-rank">02</div>
+          <div>
+            <h3>Long-tail agent trust clearinghouse</h3>
+            <div class="opp-tagline">"Stripe for the agent economy's long tail" — identity, reputation, escrow and payments-orchestration for indie and vertical agent builders the giants aren't serving.</div>
+          </div>
+          <div class="opp-score"><div class="num">6.9</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>Every serious agent-identity effort (Experian Agent Trust, Visa TAP, Mastercard Agent Pay, ERC-8004) targets enterprise integrations. The much larger population of independent developers shipping vertical agents on LangChain/CrewAI/MCP has no plug-and-play way to get their agents verified, insured, or paid.</dd>
+          <dt>Why insufficient</dt><dd>Each incumbent picked one rail (card networks, one credit bureau, one blockchain standard); none aggregate across x402, AP2, and ERC-8004, and none serve a $50/mo indie builder.</dd>
+          <dt>The fix</dt><dd>One API that issues a KYA-compliant agent identity, computes a portable reputation score, routes payment across whichever rail the counterparty needs, and holds disputed funds in escrow pending automated or human arbitration.</dd>
+          <dt>Who pays</dt><dd>Agent developers and platforms, per-verified-agent + basis points on transaction volume, plus an insurance-data licensing line once volume is meaningful.</dd>
+          <dt>Biggest risk</dt><dd>Defensibility is genuinely thin — the underlying protocols are open by design, and Stripe, Coinbase or Experian could absorb this layer in a single product announcement.</dd>
+        </dl>
+      </div>
+
+      <!-- OPP 3 -->
+      <div class="opp-card" id="opp-3">
+        <div class="opp-head">
+          <div class="opp-rank">03</div>
+          <div>
+            <h3>Agent-to-agent arbitration network</h3>
+            <div class="opp-tagline">A dispute-resolution and escrow layer built specifically for machine-speed transactions that no human is watching in real time.</div>
+          </div>
+          <div class="opp-score"><div class="num">6.75</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>x402 already processes 165M+ machine-to-machine transactions. When one agent under-delivers on what another agent paid for, there is no standard adjudication path — only ad hoc terms-of-service and a handful of arXiv proposals.</dd>
+          <dt>Why now</dt><dd>Escrow-bonded delegation contracts are already being described in academic literature (arXiv 2602.11865); the primitive (staked bonds, algorithmic-then-human-panel resolution) exists but no operational network runs it at scale — <span class="tag tag-projection">projection</span> genuine whitespace today, contingent on agent commerce volume continuing to compound.</dd>
+          <dt>The fix</dt><dd>A protocol-neutral arbitration network: agents post evidence (transaction logs, deliverable hashes), a hybrid panel of staked human experts and AI adjudicators rules, and the ruling triggers on-chain fund release or slashing.</dd>
+          <dt>Who pays</dt><dd>Per-case arbitration fee, split between disputing parties; platform fee on staked bonds.</dd>
+        </dl>
+      </div>
+
+      <!-- OPP 4 -->
+      <div class="opp-card" id="opp-4">
+        <div class="opp-head">
+          <div class="opp-rank">04</div>
+          <div>
+            <h3>Rare-event data bounty network for embodied AI</h3>
+            <div class="opp-tagline">Pays specifically for the failure modes and edge cases that bulk data-collection platforms are structurally bad at capturing.</div>
+          </div>
+          <div class="opp-score"><div class="num">6.5</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>Robotics labs confirm real scenes are "inefficient at covering long-tail failures" — the rare, safety-critical events that make models robust. Bulk data vendors (Cortex AI, Scale, Encord, Teleo) are optimized for volume, not rarity.</dd>
+          <dt>The fix</dt><dd>A bounty-style marketplace that pays a premium specifically for novel failure modes, near-misses, and unusual object/environment combinations, with deduplication and severity scoring — effectively an NHTSA-style incident registry built as a paid marketplace, feeding both robotics labs and Opportunity #1's insurance layer.</dd>
+          <dt>Who pays</dt><dd>Embodied-AI labs and robot manufacturers, per validated novel incident.</dd>
+        </dl>
+      </div>
+
+      <!-- OPP 5 -->
+      <div class="opp-card" id="opp-5">
+        <div class="opp-head">
+          <div class="opp-rank">05</div>
+          <div>
+            <h3>Simulation fidelity &amp; digital-twin validation service</h3>
+            <div class="opp-tagline">Independently certifies how well a simulation environment predicts real-world robot performance — the category explicitly flagged as most underrepresented in current robotics-data funding.</div>
+          </div>
+          <div class="opp-score"><div class="num">6.5</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>Synthetic data for robotics is growing 33%/yr ($2.48B in 2026 → $7.71B by 2030), but nobody independently validates whether a given simulator's outputs transfer to real deployment — teams currently guess.</dd>
+          <dt>The fix</dt><dd>A "simulation-to-reality" benchmarking service: continuously calibrate simulator fidelity against real-world telemetry (feeding from Opportunities #1 and #4), and certify simulation providers the way a testing lab certifies hardware.</dd>
+          <dt>Who pays</dt><dd>Simulation vendors (as a credibility signal) and robotics labs (as a buying filter), subscription + per-benchmark fee.</dd>
+        </dl>
+      </div>
+
+      <!-- OPP 6 -->
+      <div class="opp-card" id="opp-6">
+        <div class="opp-head">
+          <div class="opp-rank">06</div>
+          <div>
+            <h3>Behind-the-meter compute/energy co-location matchmaker</h3>
+            <div class="opp-tagline">Matches distributed, underused power (solar, industrial behind-meter, curtailed renewables) with edge-inference demand, sidestepping the interconnection queue entirely.</div>
+          </div>
+          <div class="opp-score"><div class="num">6.25</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>Grid interconnection queues now stretch for years; 40% of AI data centers are projected to be power-constrained by 2027. Meanwhile, huge amounts of distributed generation sit curtailed or underused.</dd>
+          <dt>The fix</dt><dd>A marketplace/matching layer (not a power generator itself) pairing site owners with spare behind-meter capacity to edge-inference operators, layered on top of existing DePIN compute networks (Akash, io.net, Aethir).</dd>
+          <dt>Biggest risk</dt><dd>Capital intensity and regulatory complexity are real; DePIN compute networks are already fairly mature, so the wedge has to be the energy-matching layer specifically, not compute brokering generally.</dd>
+        </dl>
+      </div>
+
+      <!-- OPP 7 -->
+      <div class="opp-card" id="opp-7">
+        <div class="opp-head">
+          <div class="opp-rank">07</div>
+          <div>
+            <h3>Agentic-web access &amp; content-licensing exchange</h3>
+            <div class="opp-tagline">A neutral, publisher-side rights exchange for the 57% of web traffic that's now non-human — ASCAP for AI crawlers.</div>
+          </div>
+          <div class="opp-score"><div class="num">6.1</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>Publishers have almost no way to identify, meter, or price agent access to their content beyond blocking it outright.</dd>
+          <dt>Why insufficient</dt><dd>Cloudflare's Pay Per Crawl already dominates this exact niche as an infrastructure incumbent — the opening is a neutral, cross-CDN rights-clearance layer publishers can use regardless of who fronts their traffic, closer to a collecting society than a firewall vendor.</dd>
+          <dt>Who pays</dt><dd>AI labs/agent platforms license content access; publishers take a revenue share.</dd>
+        </dl>
+      </div>
+
+      <!-- OPP 8 -->
+      <div class="opp-card" id="opp-8">
+        <div class="opp-head">
+          <div class="opp-rank">08</div>
+          <div>
+            <h3>Continuous authorization layer for human-to-agent delegation</h3>
+            <div class="opp-tagline">Cryptographic, biometric-backed proof that a human really did authorize the specific action an agent is about to take — countering voice-clone and deepfake fraud in agent commerce.</div>
+          </div>
+          <div class="opp-score"><div class="num">6.0</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>Agent-identity standards (KYA, ERC-8004) prove an agent is who it claims to be, but not that the human behind a specific high-value action actually approved it — the gap deepfake/voice-clone fraud exploits.</dd>
+          <dt>The fix</dt><dd>A liveness- and intent-bound authorization primitive that plugs into existing agent-identity rails as the "human-in-the-loop" proof layer for transactions above a risk threshold.</dd>
+        </dl>
+      </div>
+
+      <!-- OPP 9 -->
+      <div class="opp-card" id="opp-9">
+        <div class="opp-head">
+          <div class="opp-rank">09</div>
+          <div>
+            <h3>Machine-speed cross-border compliance layer</h3>
+            <div class="opp-tagline">Real-time tariff, tax and export-control screening for autonomous agents transacting across jurisdictions faster than any human compliance team can review.</div>
+          </div>
+          <div class="opp-score"><div class="num">5.9</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Note</dt><dd><span class="tag tag-projection">projection</span> The clearest extrapolation in this list rather than a directly observed trend — agentic commerce at $3–5T by 2030 (McKinsey) will cross borders, and existing customs/trade-compliance infrastructure is built for human-paced review cycles, not machine-speed micro-transactions.</dd>
+        </dl>
+      </div>
+
+      <!-- OPP 10 -->
+      <div class="opp-card" id="opp-10">
+        <div class="opp-head">
+          <div class="opp-rank">10</div>
+          <div>
+            <h3>AI-agent decommissioning &amp; digital estate service</h3>
+            <div class="opp-tagline">Handles the "death" of an agent or agent-run business: credential revocation, mandated log retention, and compliant data wind-down.</div>
+          </div>
+          <div class="opp-score"><div class="num">5.75</div><div class="lbl">overall</div></div>
+        </div>
+        <dl class="fields">
+          <dt>Problem</dt><dd>The EU AI Act's Article 19 mandates 6-month minimum log retention for high-risk systems (longer in finance/health); almost nobody has built the "offboarding" tooling for when an agent or an agent-run venture is shut down.</dd>
+          <dt>Why lowest-ranked</dt><dd>Real but not yet urgent — a compliance-driven niche rather than a growth business, best pursued as a feature of a larger governance platform rather than a standalone company today.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <!-- ================= SCORING ================= -->
+    <section class="section" id="scoring">
+      <div class="kicker">05 — Scoring matrix</div>
+      <h2>Twelve dimensions, scored 1–10</h2>
+      <p class="lede">Overall is an unweighted average. <b>Competition</b> is scored as favorability — a higher number means <i>less</i> crowded, not a bigger market. These are my own judgment calls informed by the research above, not measured facts — treat the ranking as directional. <span class="tag tag-projection">projection</span></p>
+
+      <div class="table-wrap">
+        <table class="scores tnum">
+          <thead>
+            <tr>
+              <th style="text-align:left">Opportunity</th>
+              <th>Problem<br>severity</th>
+              <th>Market<br>size</th>
+              <th>Growth</th>
+              <th>Competition<br>(favorability)</th>
+              <th>Ease of<br>starting</th>
+              <th>Tech<br>feasibility</th>
+              <th>AI<br>leverage</th>
+              <th>Automation<br>potential</th>
+              <th>Recurring<br>revenue</th>
+              <th>Scalability</th>
+              <th>Defensibility</th>
+              <th>Future<br>relevance</th>
+              <th>Overall</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="name">01 Uptime Ledger</td><td>8</td><td>7</td><td>9</td><td class="cell-hi">7</td><td class="cell-lo">4</td><td>6</td><td>8</td><td>7</td><td>9</td><td>8</td><td>7</td><td>9</td><td class="overall">7.4</td></tr>
+            <tr><td class="name">02 Agent trust clearinghouse</td><td>7</td><td>8</td><td>9</td><td class="cell-lo">3</td><td>6</td><td>7</td><td>7</td><td>8</td><td>8</td><td>8</td><td class="cell-lo">4</td><td>8</td><td class="overall">6.9</td></tr>
+            <tr><td class="name">03 Agent arbitration network</td><td>6</td><td>5</td><td>8</td><td class="cell-hi">9</td><td class="cell-mid">5</td><td>6</td><td>8</td><td>8</td><td>6</td><td>7</td><td>6</td><td>7</td><td class="overall">6.75</td></tr>
+            <tr><td class="name">04 Rare-event data bounty</td><td>7</td><td>6</td><td>8</td><td class="cell-mid">6</td><td class="cell-mid">5</td><td>6</td><td>7</td><td>6</td><td>7</td><td>6</td><td>6</td><td>8</td><td class="overall">6.5</td></tr>
+            <tr><td class="name">05 Simulation fidelity service</td><td>7</td><td>6</td><td>8</td><td class="cell-hi">7</td><td class="cell-lo">4</td><td class="cell-mid">5</td><td>7</td><td>6</td><td>7</td><td>7</td><td>6</td><td>8</td><td class="overall">6.5</td></tr>
+            <tr><td class="name">06 Energy/compute co-location</td><td>8</td><td>8</td><td>8</td><td class="cell-mid">5</td><td class="cell-lo">3</td><td class="cell-mid">5</td><td class="cell-mid">5</td><td>6</td><td>7</td><td>6</td><td class="cell-mid">5</td><td>9</td><td class="overall">6.25</td></tr>
+            <tr><td class="name">07 Agentic-web licensing exchange</td><td>7</td><td>6</td><td>7</td><td class="cell-lo">4</td><td class="cell-mid">5</td><td>6</td><td class="cell-mid">6</td><td>7</td><td>7</td><td>7</td><td class="cell-lo">4</td><td>7</td><td class="overall">6.1</td></tr>
+            <tr><td class="name">08 Continuous authorization layer</td><td>7</td><td class="cell-mid">5</td><td>7</td><td class="cell-mid">5</td><td class="cell-mid">5</td><td class="cell-mid">6</td><td class="cell-mid">6</td><td>6</td><td>6</td><td>7</td><td class="cell-mid">5</td><td>7</td><td class="overall">6.0</td></tr>
+            <tr><td class="name">09 Cross-border compliance layer</td><td class="cell-mid">6</td><td class="cell-mid">6</td><td>7</td><td class="cell-hi">7</td><td class="cell-lo">4</td><td class="cell-mid">5</td><td class="cell-mid">6</td><td>6</td><td class="cell-mid">6</td><td class="cell-mid">6</td><td class="cell-mid">5</td><td>7</td><td class="overall">5.9</td></tr>
+            <tr><td class="name">10 Agent decommissioning service</td><td class="cell-lo">5</td><td class="cell-lo">4</td><td class="cell-mid">6</td><td class="cell-hi">9</td><td>6</td><td class="cell-mid">6</td><td class="cell-lo">5</td><td>7</td><td class="cell-mid">5</td><td class="cell-mid">5</td><td class="cell-mid">5</td><td class="cell-mid">6</td><td class="overall">5.75</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:.82rem;color:var(--ink-3)">Reading the pattern: the two consistent brakes across the whole list are <b>ease of starting</b> and <b>defensibility</b> — nearly everything genuinely infrastructure-shaped here requires real capital, regulatory, or actuarial expertise to start, and open protocols mean technical moats alone rarely hold. That tension is the honest core of this entire research exercise.</p>
+    </section>
+
+    <!-- ================= FUTURES ================= -->
+    <section class="section" id="futures">
+      <div class="kicker">06 — Future simulation</div>
+      <h2>How the top three opportunities could unfold, 2026 → 2035</h2>
+      <p class="lede"><span class="tag tag-projection">projection</span> Everything below this point is forecast, extrapolated from the researched trend lines above — not observed fact.</p>
+
+      <h4 style="margin-top:1.6rem">Uptime Ledger (robot fleet assurance)</h4>
+      <div class="timeline">
+        <div class="tl-stage"><div class="tl-year">2026</div><h4>Pure SaaS</h4><p>Telemetry + predictive maintenance for AMRs and industrial arms only. No insurance yet — too early, no loss data. Design partners, not revenue scale.</p></div>
+        <div class="tl-stage"><div class="tl-year">2028</div><h4>Data moat forms</h4><p>Enough fleet-years logged to start a parametric-insurance pilot via an MGA/fronting-carrier partner. Humanoid deployments move from pilot to early production, expanding the addressable robot classes.</p></div>
+        <div class="tl-stage"><div class="tl-year">2030</div><h4>Neutral utility status</h4><p>If it works, this becomes the default cross-manufacturer risk layer — the way Verisk became infrastructure for property/casualty. Manufacturers start embedding it as a white-labeled warranty product.</p></div>
+        <div class="tl-stage"><div class="tl-year">2035</div><h4>Ambient infrastructure</h4><p>With 1M+ humanoid units in the field (Goldman Sachs' 2035 projection), the incident registry is effectively mandatory underwriting infrastructure — assuming regulation doesn't instead force this data to be public/shared, which would erase the moat.</p></div>
+      </div>
+
+      <h4 style="margin-top:2rem">Agent trust clearinghouse</h4>
+      <div class="timeline">
+        <div class="tl-stage"><div class="tl-year">2026</div><h4>Aggregation play</h4><p>Wraps x402 + AP2 + ERC-8004 into one API for indie builders while giants fight over enterprise integrations.</p></div>
+        <div class="tl-stage"><div class="tl-year">2028</div><h4>Squeeze point</h4><p>Either the open protocols standardize enough that this becomes a thin, low-margin routing layer, or fragmentation persists and the aggregator becomes genuinely valuable — the coin-flip year.</p></div>
+        <div class="tl-stage"><div class="tl-year">2030</div><h4>Consolidation</h4><p>Most likely outcome: acquired by a payments or identity incumbent rather than becoming independent at scale.</p></div>
+        <div class="tl-stage"><div class="tl-year">2035</div><h4>Commodity or footnote</h4><p>Agent identity is table stakes, bundled into every major cloud/agent platform — the standalone business case has likely closed.</p></div>
+      </div>
+
+      <h4 style="margin-top:2rem">Agent-to-agent arbitration network</h4>
+      <div class="timeline">
+        <div class="tl-stage"><div class="tl-year">2026</div><h4>Pre-paradigm</h4><p>Almost nothing operational exists beyond academic proposals and one tiny site. Genuine first-mover territory, low volume.</p></div>
+        <div class="tl-stage"><div class="tl-year">2028</div><h4>Volume arrives</h4><p>If agent commerce keeps compounding toward McKinsey's $3–5T 2030 estimate, dispute volume crosses the threshold where ad hoc resolution breaks down.</p></div>
+        <div class="tl-stage"><div class="tl-year">2030</div><h4>Standard-setting moment</h4><p>Whoever built credible case history and panel infrastructure early becomes the default the way the AAA or ICC became default arbitrators for commercial disputes.</p></div>
+        <div class="tl-stage"><div class="tl-year">2035</div><h4>Judicial infrastructure</h4><p>Plausibly a real, durable institution — but this path has the widest error bars of the three; it depends entirely on agent-to-agent commerce actually reaching the volumes forecast.</p></div>
+      </div>
+    </section>
+
+    <!-- ================= DEEP DIVE ================= -->
+    <section class="section" id="deepdive">
+      <div class="kicker">07 — Deep dive: opportunity #1</div>
+      <h2>Uptime Ledger — assurance infrastructure for robot fleets</h2>
+      <p class="lede">A neutral telemetry, incident-registry, and parametric-insurance network for physical autonomous fleets — built to become what Verisk is to property risk or Carfax is to used vehicles, but for robots.</p>
+
+      <div id="dd-model"></div>
+      <h3>Business model</h3>
+      <p>Three revenue lines, sequenced deliberately to de-risk the hardest part last:</p>
+      <ol class="tight">
+        <li><b>SaaS telemetry &amp; predictive maintenance</b> — sold to fleet operators from day one. Asset-light, no license required, fast to prove.</li>
+        <li><b>Aggregate risk-data licensing</b> — sold to insurers and manufacturers once the incident registry has real volume; privacy-preserving, cross-manufacturer.</li>
+        <li><b>Parametric uptime/liability insurance</b> — underwritten via an MGA (managing general agent) partnership with a licensed fronting carrier and reinsurance panel, launched only once loss data exists to price it responsibly. This is the line that could eventually make the company worth a great deal — and the one most likely to fail if rushed.</li>
+      </ol>
+
+      <div id="dd-architecture"></div>
+      <h3>Product architecture</h3>
+      <div class="grid-2">
+        <div class="panel">
+          <h4 style="font-size:1rem">Edge layer</h4>
+          <p style="font-size:.9rem">A lightweight agent (Rust/C++, low footprint) runs on or beside the robot controller, streaming joint torque, thermal, encoder drift, battery-cycle, task-outcome, and safety-stop data over MQTT/gRPC. Works across OEMs via a normalized schema rather than one integration per manufacturer.</p>
+        </div>
+        <div class="panel">
+          <h4 style="font-size:1rem">Ingestion &amp; registry</h4>
+          <p style="font-size:.9rem">Event bus normalizes telemetry into a time-series store; every anomaly and failure is deduplicated, severity-scored, and written into an immutable incident registry — effectively an NHTSA crash database for robots, and the evidentiary backbone for both claims and compliance logging.</p>
+        </div>
+        <div class="panel">
+          <h4 style="font-size:1rem">Risk engine</h4>
+          <p style="font-size:.9rem">Per-robot-class baseline models flag drift before failure (predictive maintenance) and continuously recompute a live risk score per fleet — the same score that eventually feeds parametric-insurance pricing.</p>
+        </div>
+        <div class="panel">
+          <h4 style="font-size:1rem">Distribution surfaces</h4>
+          <p style="font-size:.9rem">Fleet-operator dashboard + API; insurer/manufacturer data marketplace with privacy-preserving aggregate access; eventually a white-labeled warranty product manufacturers can embed at point of sale.</p>
+        </div>
+      </div>
+
+      <div id="dd-agents"></div>
+      <h3>AI-agent organization</h3>
+      <p>The business itself is designed to be run by a coordinated team of specialized agents from year one, with human oversight concentrated exactly where regulation and safety demand it — not spread evenly.</p>
+
+      <div class="orgchart">
+        <div class="org-box ceo"><span class="role">Orchestrator</span>AI CEO agent<br><span style="font-weight:400;font-size:.72rem;color:var(--ink-2)">sets targets, allocates budget, reviews KPI rollups, approves changes above threshold</span></div>
+        <div class="org-connector"></div>
+        <div class="org-bus"></div>
+        <div class="org-tier">
+          <div class="org-box"><span class="role">Research</span>Scans OEM releases, regs, academic &amp; competitor signals</div>
+          <div class="org-box"><span class="role">Acquisition</span>Finds newly-funded fleets from public signals, drafts outreach</div>
+          <div class="org-box"><span class="role">Sales</span>Demos, proposals, contracts within pre-approved bands</div>
+          <div class="org-box"><span class="role">Support</span>Onboards robot models, triages tickets, hard-escalates safety issues</div>
+        </div>
+        <div class="org-bus"></div>
+        <div class="org-tier">
+          <div class="org-box"><span class="role">Financial</span>Burn, reserve ratio, loss-ratio drift, investor &amp; reinsurer reporting</div>
+          <div class="org-box"><span class="role">Operations</span>Sensor-kit logistics, pipeline uptime, OEM integration backlog</div>
+          <div class="org-box"><span class="role">Underwriting*</span>Recalibrates risk models; pricing changes need licensed-actuary sign-off</div>
+          <div class="org-box"><span class="role">Claims*</span>Auto-adjudicates small claims via black-box telemetry; escalates the rest</div>
+          <div class="org-box"><span class="role">Safety monitor*</span>Watches live fleet-wide telemetry for imminent-incident signals; can trigger alerts</div>
+        </div>
+      </div>
+      <p style="font-size:.82rem;color:var(--ink-3)">*Specialized to this business. All agents publish to and subscribe from a shared event bus; the CEO agent reads a periodic rolled-up state summary rather than every event. Financial-threshold and safety-critical events bypass the normal loop and escalate directly to a human — this is the one place autonomy is deliberately capped, because insurance regulation requires an accountable licensed party of record, not just an agent.</p>
+
+      <div id="dd-stack"></div>
+      <h3>Technology stack &amp; MVP</h3>
+      <div class="grid-2">
+        <div class="panel">
+          <h4 style="font-size:1rem">Stack</h4>
+          <ul class="tight" style="font-size:.88rem">
+            <li>Edge agent: Rust/C++ over MQTT/gRPC</li>
+            <li>Event bus: Kafka-class pub/sub</li>
+            <li>Storage: TimescaleDB (telemetry), Postgres (accounts/claims/policies), object storage for incident sensor snapshots</li>
+            <li>ML: per-class anomaly &amp; drift models, gradient-boosted + sequence models</li>
+            <li>Agent orchestration: agent-SDK-based internal team with MCP tool access to every internal system</li>
+            <li>Insurance rail: MGA-in-a-box on top of a fronting carrier + reinsurance panel — not a from-scratch carrier</li>
+            <li>Compliance: audit ledger meeting EU AI Act Article 19 retention, SOC 2</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4 style="font-size:1rem">MVP scope</h4>
+          <p style="font-size:.9rem">Deliberately narrow: telemetry + predictive-maintenance dashboard for <b>one</b> robot class in <b>one</b> vertical — warehouse AMRs, not humanoids, because AMRs are already deployed at real volume today while humanoids are still mostly pilots. No insurance in the MVP at all; the entire point of year one is accumulating the loss data that makes underwriting possible later.</p>
+        </div>
+      </div>
+
+      <div id="dd-gtm"></div>
+      <h3>Go-to-market &amp; pricing</h3>
+      <p><b>Acquisition:</b> design-partner motion into mid-size logistics/3PL and manufacturing firms already running AMR/cobot fleets — underserved by OEM-specific tools. Warm intros through robotics VCs' portfolios; presence at MODEX/ProMat/Automate; ROI case studies ("X% reduction in unplanned downtime") once the first partners are live.</p>
+      <p><b>Pricing:</b> SaaS tier at $150–400/robot/month depending on fleet size, benchmarked against industrial-IoT predictive-maintenance norms. Insurance tier, once live, priced at 3–6% of asset value per year — positioned against the 10–15%/year unmanaged-maintenance baseline this dossier's research surfaced, so the pitch to a fleet operator is a straightforward cost-of-risk trade, not a leap of faith.</p>
+
+      <div class="callout flare">
+        <div class="callout-label">Revenue projection — labeled explicitly as a forecast</div>
+        <p><span class="tag tag-projection">projection</span> Year 1: design partners only, SaaS-only, under $250K ARR — the point is proving the data pipeline and ROI, not revenue. Year 2: 50–100 paying fleets, $3–5M ARR, first narrow insurance pilot with one carrier partner. Year 3: insurance line starts contributing meaningfully, blended ARR in the $15–25M range. This is a genuinely slow, capital-patient path — insurance businesses take years to prove a loss ratio, and rushing that step is the single most common failure mode in insurtech.</p>
+      </div>
+
+      <div id="dd-roadmap"></div>
+      <h3>Roadmap</h3>
+      <div class="roadmap">
+        <div class="rm-row"><div class="rm-when">First 30 days</div><div>Minimal telemetry agent shipped for 1–2 AMR models; 2–3 design-partner LOIs signed; event bus + dashboard v0 live; incident-taxonomy schema drafted; first conversations with a licensed actuary/insurance advisor.</div></div>
+        <div class="rm-row"><div class="rm-when">First 90 days</div><div>5–8 design partners streaming live telemetry; first predictive-maintenance alerts validated against real failures; incident registry v1 populated; seed round raised on data + early traction; recruiting an actuarial/insurance co-founder or senior advisor — near-mandatory for credibility on the insurance leg.</div></div>
+        <div class="rm-row"><div class="rm-when">Year one</div><div>SaaS generally available across 2–3 robot classes/verticals; 30–50 paying fleets; first parametric-insurance pilot policies issued through an MGA/fronting-carrier partnership; Series A raised on combined SaaS ARR and the emerging underwriting-data moat.</div></div>
+        <div class="rm-row"><div class="rm-when">Scaling</div><div>Horizontal: add OEMs/robot classes — each integration makes the platform more valuable to insurers, a genuine network effect. Vertical: telemetry → underwriting → manufacturer-embedded white-labeled warranty. Geographic: the EU AI Act's mandatory logging requirements are a natural regulatory wedge into Europe.</div></div>
+      </div>
+
+      <div id="dd-risk"></div>
+      <h3>Major risks &amp; competitive moat</h3>
+      <div class="grid-2">
+        <div class="panel">
+          <h4 style="font-size:1rem">Risks</h4>
+          <ul class="tight" style="font-size:.88rem">
+            <li>Insurance is regulated, capital-intensive, and slow to compound — a software team without real actuarial/regulatory talent is structurally mismatched to it.</li>
+            <li>Major OEMs (Boston Dynamics, Figure, Unitree, Tesla) could build fleet telemetry in-house and refuse third-party access, cutting off the data supply that makes the whole model work.</li>
+            <li>Humanoid deployment could stay pilot-stage longer than forecast, delaying the biggest slice of the addressable market.</li>
+            <li>Incumbent industrial-IoT vendors could bundle a "good enough" free version to defend their accounts.</li>
+            <li>Liability allocation between manufacturer, operator, and software provider is still legally unsettled — it could resolve in a way that removes the need for this product entirely, or make it indispensable. Genuinely uncertain either way.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h4 style="font-size:1rem">Moat</h4>
+          <p style="font-size:.9rem">A proprietary, cross-OEM failure-mode dataset that compounds with every fleet-year monitored: more fleets → better risk models → better pricing → more attractive to operators and insurers → more fleets. The neutrality itself is the moat — no OEM will trust a competitor's telemetry platform, but all can accept an independent one for underwriting, the same dynamic that let Verisk and Carfax become durable industry utilities rather than just vendors.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top:1.8rem">Path to increasing autonomy</h3>
+      <ol class="tight">
+        <li><b>Phase 1</b> — agents draft and assist; humans review every underwriting decision and safety escalation.</li>
+        <li><b>Phase 2</b> — sales/support/research agents operate with light review; claims agent auto-adjudicates below a small-dollar threshold.</li>
+        <li><b>Phase 3</b> — underwriting agent adjusts pricing within pre-approved bands without per-case sign-off, fully audited; CEO agent runs weekly strategy synthesis with human veto rights.</li>
+        <li><b>Phase 4 (5–10yr horizon)</b> — most operational decisions run autonomously; humans stay in the loop specifically for regulatory sign-off, high-severity claims, and strategic pivots. Full autonomy is neither realistic nor desirable here — insurance regulation requires a licensed, accountable party of record, and that will remain human for the foreseeable future.</li>
+      </ol>
+    </section>
+
+    <!-- ================= VERDICT ================= -->
+    <section class="section" id="verdict">
+      <div class="kicker">08 — The billion-dollar question</div>
+      <h2>Could this realistically become a billion-dollar company?</h2>
+      <div class="verdict">
+        <div class="verdict-answer">Plausible, not likely — a high-variance infrastructure bet, not a sure thing.</div>
+        <p>The pure-software telemetry and predictive-maintenance layer, on its own, is probably a $50–200M ARR ceiling business — valuable, fundable, comparable to the better industrial-IoT predictive-maintenance companies, but not obviously a unicorn by itself.</p>
+        <p>The billion-dollar shape only appears if the company successfully becomes the underwriting-data and risk layer for robot-fleet insurance at scale — structurally similar to how Verisk (public, tens of billions in market cap) or cyber-insurance MGAs like Coalition (privately valued near $5B) turned proprietary risk data into durable, capital-efficient businesses once they had enough loss history to underwrite confidently.</p>
+        <p>That outcome depends on three things holding, none of them guaranteed: humanoid and industrial robot fleets actually reaching the millions-of-units range multiple analysts project for the mid-2030s; the founding team securing real actuarial and regulatory capability early, since underestimating how slow and capital-intensive insurance distribution is the single most common failure mode in this category; and at least one or two major robot manufacturers staying open to third-party telemetry access rather than locking the data inside their own walled gardens.</p>
+        <p><b>Honest odds, given excellent execution over 5–10 years:</b> a real, double-digit-percent chance of reaching a billion-dollar valuation — good enough to be worth a strong founder's decade, not a guaranteed unicorn. The more likely outcomes are a solid $50–300M business, an acquisition by an industrial-IoT or insurance incumbent once the data asset is proven, or — if the OEM-access risk materializes — a much smaller company than this dossier's optimistic case assumes.</p>
+      </div>
+    </section>
+
+    <!-- ================= SOURCES ================= -->
+    <section class="section" id="sources">
+      <div class="kicker">09 — Sources &amp; method</div>
+      <h2>What's fact, what's forecast</h2>
+      <p class="lede">Every market-size figure, funding number, and named company above came from live web research conducted for this dossier; every roadmap, revenue projection, score, and future-simulation section is explicitly my own analysis and forecast, not observed data. Where the two are mixed in one paragraph, inline <span class="tag tag-fact">researched</span> / <span class="tag tag-projection">projection</span> tags mark which is which.</p>
+      <ul class="sources">
+        <li>Chainalysis — "Inside x402: 100M Agentic Payments on Base"</li>
+        <li>RZLT — "Agentic Payments in 2026: The x402 Explainer"</li>
+        <li>eco.com — "What Is Agentic Commerce? The 2026 Guide"</li>
+        <li>NCCoE / NIST — AI agent identity &amp; authorization concept paper, Feb 2026</li>
+        <li>Decentralized Identity Foundation — KYA-OS / MCP-I specification</li>
+        <li>Experian newsroom — "Experian Announces Agent Trust," Apr 2026</li>
+        <li>The Insurer — "Klaimee raises $5.5 million"</li>
+        <li>Insurance Business Magazine — AI insurance startup coverage</li>
+        <li>Corgi.insure — carrier &amp; funding disclosures</li>
+        <li>Shaip — "Humanoid Robot Training Data: Deployment Guide 2026"</li>
+        <li>Digital Divide Data — "Humanoid Training Data And The Problem Nobody Is Talking About"</li>
+        <li>TechCrunch — Physical Intelligence profile, Jan 2026</li>
+        <li>Startuphub.ai / Spheron Network — AI data-center power-constraint coverage</li>
+        <li>Deloitte — AI data-center power-demand projections</li>
+        <li>Cloudflare Radar (via NBC News, Forbes, CNBC coverage) — bot vs. human traffic data</li>
+        <li>Messari / BlockEden.xyz — DePIN market-cap and TAM estimates</li>
+        <li>Obsidian Security / Unit42 (Palo Alto Networks) — prompt-injection and agent-fraud data</li>
+        <li>Research and Markets / Grand View Research / Mordor Intelligence — decentralized-identity market sizing</li>
+        <li>ResearchAndMarkets — synthetic-data-for-robotics market report</li>
+        <li>Cortex AI, Teleo, Physical Intelligence, Skild AI — company positioning via press coverage</li>
+        <li>PitchBook / Tracxn — Q1 2026 AI and agentic-AI venture-funding data</li>
+      </ul>
+      <p style="font-size:.82rem;color:var(--ink-3);margin-top:1rem">Methodology: twelve dimensions scored 1–10 by editorial judgment informed by the research above (not a quantitative model); "Overall" is an unweighted average; "Competition" is scored as favorability, where higher means less crowded. Treat rankings as directional guidance for where to look next, not as a substitute for the founder's own diligence.</p>
+    </section>
+
+    <footer class="colophon">
+      Prepared as a research and strategy exercise. Market figures current as of August 2026 and will move — verify anything decision-critical before acting on it.
+    </footer>
+
+  </main>
+</div>
