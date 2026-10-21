@@ -66,6 +66,7 @@
           "tsconfig": "<rootDir>/../../tests/tsconfig.json"
         }
       ]
-    }
+    },
+    "maxWorkers": 1
   }
 }

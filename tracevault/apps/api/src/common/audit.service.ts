@@ -61,8 +61,20 @@ export class AuditService {
     return this.db.tx(run);
   }
 
+  /** Key-sorted JSON so the hash survives jsonb's key reordering. */
+  static stable(value: unknown): string {
+    if (Array.isArray(value)) return `[${value.map((v) => AuditService.stable(v)).join(',')}]`;
+    if (value && typeof value === 'object') {
+      const entries = Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+      return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${AuditService.stable(v)}`).join(',')}}`;
+    }
+    return JSON.stringify(value ?? null);
+  }
+
   static canonical(e: AuditEntry, occurredAt: string): string {
-    return JSON.stringify([
+    return AuditService.stable([
       occurredAt,
       e.actorUserId ?? null,
       e.actorDeviceId ?? null,
