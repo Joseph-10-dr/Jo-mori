@@ -1,0 +1,14 @@
+{
+  "extends": "../apps/api/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "typeRoots": ["../apps/api/node_modules/@types"],
+    "types": ["jest", "node"],
+    "paths": {
+      "@tracevault/event-schema": ["../packages/event-schema/src"],
+      "@tracevault/api-contracts": ["../packages/api-contracts/src"],
+      "*": ["../apps/api/node_modules/*", "../apps/api/node_modules/@types/*"]
+    }
+  },
+  "include": ["unit", "integration", "security"]
+}

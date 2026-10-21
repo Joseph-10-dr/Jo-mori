@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.next/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+# local object storage for recordings and generated dev keys
+var/
+# simulator offline queue
+.tracevault-queue*
+# .NET
+bin/
+obj/
+*.user
+test-results/
+playwright-report/
+*.tsbuildinfo

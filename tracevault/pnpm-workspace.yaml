@@ -1,0 +1,9 @@
+packages:
+  - "apps/web"
+  - "apps/api"
+  - "apps/simulator"
+  - "packages/*"
+onlyBuiltDependencies:
+  - "@node-rs/argon2"
+  - "sharp"
+  - "esbuild"

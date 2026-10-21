@@ -1,0 +1,26 @@
+{
+  "name": "tracevault",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "pnpm -r --filter ./packages/** run build && pnpm -r --filter ./apps/** run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r run test",
+    "db:migrate": "pnpm --filter @tracevault/api run db:migrate",
+    "dev:api": "pnpm --filter @tracevault/api run dev",
+    "dev:web": "pnpm --filter @tracevault/web run dev",
+    "simulate": "pnpm --filter @tracevault/simulator run start"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.0"
+  }
+}
