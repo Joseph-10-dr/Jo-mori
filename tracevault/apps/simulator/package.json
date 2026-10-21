@@ -1,0 +1,12 @@
+{
+  "name": "@tracevault/simulator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generates clearly-labelled demonstration events and exercises the device upload pipeline (enrollment, offline queue, retry).",
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": { "@tracevault/event-schema": "workspace:*" },
+  "devDependencies": { "@types/node": "22.20.5", "tsx": "4.23.15", "typescript": "5.9.3" }
+}

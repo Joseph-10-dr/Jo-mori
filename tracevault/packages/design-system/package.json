@@ -1,0 +1,12 @@
+{
+  "name": "@tracevault/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": { "react": "^19.0.0" },
+  "devDependencies": { "@types/react": "19.1.17", "react": "19.1.9", "typescript": "5.9.3" }
+}
