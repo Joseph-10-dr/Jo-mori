@@ -19,7 +19,10 @@ export class DashboardController {
 
   @Get()
   async overview(@CurrentUser() user: UserAuth, @Query() q: unknown) {
-    const { days } = parse(z.object({ days: z.coerce.number().int().min(1).max(90).default(7) }), q);
+    const { days } = parse(
+      z.object({ days: z.coerce.number().int().min(1).max(90).default(7) }),
+      q,
+    );
     const scope = await this.access.scope(user.userId);
     const p = [scope.userId, scope.viewAllOrgIds];
     const vis = (a: string) => AccessService.visibleSql(a, 1, 2);
@@ -72,7 +75,10 @@ export class DashboardController {
       alerts: { ...alerts, recent: recentAlerts },
       activity: { days, series: activity },
       recordings: recording,
-      storage: { recording_bytes_used: await this.usage.recordingBytesUsed(personal), plan: await this.usage.plan(personal) },
+      storage: {
+        recording_bytes_used: await this.usage.recordingBytesUsed(personal),
+        plan: await this.usage.plan(personal),
+      },
       needs_attention: attention,
       email_verified: user.emailVerified,
       mfa_enabled: user.mfaEnabled,

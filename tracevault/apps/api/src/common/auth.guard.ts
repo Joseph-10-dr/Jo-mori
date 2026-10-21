@@ -24,7 +24,8 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const mode =
-      this.reflector.getAllAndOverride<AuthMode>(AUTH_MODE, [ctx.getHandler(), ctx.getClass()]) ?? 'user';
+      this.reflector.getAllAndOverride<AuthMode>(AUTH_MODE, [ctx.getHandler(), ctx.getClass()]) ??
+      'user';
     if (mode === 'public') return true;
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
     const header = req.headers.authorization ?? '';
@@ -47,7 +48,9 @@ export class AuthGuard implements CanActivate {
         [sha256(m[1])],
       );
       if (!row) throw new UnauthorizedException('Device credential is invalid or revoked');
-      await this.db.query('UPDATE device_credentials SET last_used_at = now() WHERE id = $1', [row.credential_id]);
+      await this.db.query('UPDATE device_credentials SET last_used_at = now() WHERE id = $1', [
+        row.credential_id,
+      ]);
       req.auth = {
         kind: 'device',
         deviceId: row.device_id,
@@ -68,7 +71,11 @@ export class AuthGuard implements CanActivate {
       viaCookie = true;
     }
     if (!token) throw new UnauthorizedException('Sign in required');
-    if (viaCookie && !['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.headers[CSRF_HEADER] !== '1') {
+    if (
+      viaCookie &&
+      !['GET', 'HEAD', 'OPTIONS'].includes(req.method) &&
+      req.headers[CSRF_HEADER] !== '1'
+    ) {
       throw new ForbiddenException('Missing CSRF header');
     }
     const s = await this.db.one<{

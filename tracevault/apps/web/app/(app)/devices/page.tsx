@@ -27,9 +27,20 @@ export default function DevicesPage() {
         }
       />
       <Card>
-        <div className="tv-row" role="tablist" aria-label="Device status" style={{ marginBottom: 12 }}>
+        <div
+          className="tv-row"
+          role="tablist"
+          aria-label="Device status"
+          style={{ marginBottom: 12 }}
+        >
           {(['active', 'revoked'] as const).map((s) => (
-            <button key={s} role="tab" aria-selected={status === s} className={`tv-btn tv-btn--sm${status === s ? ' tv-btn--primary' : ''}`} onClick={() => setStatus(s)}>
+            <button
+              key={s}
+              role="tab"
+              aria-selected={status === s}
+              className={`tv-btn tv-btn--sm${status === s ? ' tv-btn--primary' : ''}`}
+              onClick={() => setStatus(s)}
+            >
               {s === 'active' ? 'Active' : 'Revoked'}
             </button>
           ))}
@@ -69,11 +80,19 @@ export default function DevicesPage() {
                     <td>
                       <SyncBadge status={d.sync_status} />
                     </td>
-                    <td>{d.status === 'active' ? <MonitoringBadge status={d.monitoring_status} /> : '—'}</td>
+                    <td>
+                      {d.status === 'active' ? (
+                        <MonitoringBadge status={d.monitoring_status} />
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                     <td>
                       <Time iso={d.last_seen_at} relative />
                     </td>
-                    <td className="tv-small">{d.organization_name ? `Org: ${d.organization_name}` : 'Personal'}</td>
+                    <td className="tv-small">
+                      {d.organization_name ? `Org: ${d.organization_name}` : 'Personal'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

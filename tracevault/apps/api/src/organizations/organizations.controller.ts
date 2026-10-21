@@ -44,7 +44,8 @@ export class OrganizationsController {
   @Post('organizations')
   async create(@CurrentUser() user: UserAuth, @Body() body: unknown) {
     const dto = parse(z.object({ name: z.string().trim().min(2).max(120) }).strict(), body);
-    if (!user.emailVerified) throw new ForbiddenException('Verify your email address before creating an organization');
+    if (!user.emailVerified)
+      throw new ForbiddenException('Verify your email address before creating an organization');
     const limits = PLAN_LIMITS.business;
     return this.db.tx(async (c) => {
       const org = await this.db.one<{ id: string; name: string; created_at: Date }>(
@@ -52,16 +53,31 @@ export class OrganizationsController {
         [dto.name, user.userId],
         c,
       );
-      await this.db.query(`INSERT INTO organization_members (organization_id, user_id, role) VALUES ($1,$2,'owner')`, [org!.id, user.userId], c);
+      await this.db.query(
+        `INSERT INTO organization_members (organization_id, user_id, role) VALUES ($1,$2,'owner')`,
+        [org!.id, user.userId],
+        c,
+      );
       // Billing is not integrated yet: organizations start on a business trial with no payment taken.
-      await this.db.query(`INSERT INTO subscriptions (organization_id, plan, status) VALUES ($1, 'business', 'trialing')`, [org!.id], c);
+      await this.db.query(
+        `INSERT INTO subscriptions (organization_id, plan, status) VALUES ($1, 'business', 'trialing')`,
+        [org!.id],
+        c,
+      );
       await this.db.query(
         `INSERT INTO retention_policies (organization_id, event_retention_days, recording_retention_days) VALUES ($1,$2,30)`,
         [org!.id, limits.retentionDaysDefault],
         c,
       );
       await this.audit.record(
-        { action: 'org.created', actorUserId: user.userId, organizationId: org!.id, targetType: 'organization', targetId: org!.id, details: { name: dto.name } },
+        {
+          action: 'org.created',
+          actorUserId: user.userId,
+          organizationId: org!.id,
+          targetType: 'organization',
+          targetId: org!.id,
+          details: { name: dto.name },
+        },
         c,
       );
       return { ...org, role: 'owner' };
@@ -105,7 +121,11 @@ export class OrganizationsController {
   }
 
   @Patch('organizations/:id')
-  async updatePolicy(@CurrentUser() user: UserAuth, @Param('id') id: string, @Body() body: unknown) {
+  async updatePolicy(
+    @CurrentUser() user: UserAuth,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
     const orgId = parse(uuidParam, id);
     const dto = parse(
       z
@@ -119,13 +139,29 @@ export class OrganizationsController {
       body,
     );
     // Turning recordings on, renaming, or relaxing MFA are owner-level decisions.
-    const needsOwner = dto.name !== undefined || dto.recordings_allowed !== undefined || dto.require_mfa_for_admins !== undefined;
-    await this.access.requireOrgPermission(user, orgId, needsOwner ? 'org.manage' : 'policies.manage');
+    const needsOwner =
+      dto.name !== undefined ||
+      dto.recordings_allowed !== undefined ||
+      dto.require_mfa_for_admins !== undefined;
+    await this.access.requireOrgPermission(
+      user,
+      orgId,
+      needsOwner ? 'org.manage' : 'policies.manage',
+    );
     const sets: string[] = [];
     const params: unknown[] = [orgId];
-    for (const [k, v] of Object.entries(dto)) if (v !== undefined) sets.push(`${k} = $${params.push(v)}`);
-    if (sets.length) await this.db.query(`UPDATE organizations SET ${sets.join(', ')} WHERE id = $1`, params);
-    await this.audit.record({ action: 'org.policy_changed', actorUserId: user.userId, organizationId: orgId, targetType: 'organization', targetId: orgId, details: dto });
+    for (const [k, v] of Object.entries(dto))
+      if (v !== undefined) sets.push(`${k} = $${params.push(v)}`);
+    if (sets.length)
+      await this.db.query(`UPDATE organizations SET ${sets.join(', ')} WHERE id = $1`, params);
+    await this.audit.record({
+      action: 'org.policy_changed',
+      actorUserId: user.userId,
+      organizationId: orgId,
+      targetType: 'organization',
+      targetId: orgId,
+      details: dto,
+    });
     return this.get(user, orgId);
   }
 
@@ -147,9 +183,20 @@ export class OrganizationsController {
     await this.db.query(
       `UPDATE retention_policies SET event_retention_days = $2, recording_retention_days = $3, audit_retention_days = $4,
          updated_at = now(), updated_by = $5 WHERE organization_id = $1`,
-      [orgId, dto.event_retention_days, dto.recording_retention_days, dto.audit_retention_days, user.userId],
+      [
+        orgId,
+        dto.event_retention_days,
+        dto.recording_retention_days,
+        dto.audit_retention_days,
+        user.userId,
+      ],
     );
-    await this.audit.record({ action: 'org.retention_changed', actorUserId: user.userId, organizationId: orgId, details: dto });
+    await this.audit.record({
+      action: 'org.retention_changed',
+      actorUserId: user.userId,
+      organizationId: orgId,
+      details: dto,
+    });
     return dto;
   }
 
@@ -168,16 +215,29 @@ export class OrganizationsController {
   }
 
   @Patch('organizations/:id/members/:userId')
-  async changeRole(@CurrentUser() user: UserAuth, @Param('id') id: string, @Param('userId') userId: string, @Body() body: unknown) {
+  async changeRole(
+    @CurrentUser() user: UserAuth,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() body: unknown,
+  ) {
     const orgId = parse(uuidParam, id);
     const target = parse(uuidParam, userId);
     const dto = parse(z.object({ role: assignableRole }).strict(), body);
     const actorRole = await this.access.requireOrgPermission(user, orgId, 'members.manage');
-    const current = await this.db.one<{ role: string }>('SELECT role FROM organization_members WHERE organization_id = $1 AND user_id = $2', [orgId, target]);
+    const current = await this.db.one<{ role: string }>(
+      'SELECT role FROM organization_members WHERE organization_id = $1 AND user_id = $2',
+      [orgId, target],
+    );
     if (!current) throw new NotFoundException('Member not found');
-    if (current.role === 'owner') throw new ForbiddenException('The organization owner role cannot be changed here');
-    if (dto.role === 'admin' && actorRole !== 'owner') throw new ForbiddenException('Only the owner can grant the administrator role');
-    await this.db.query('UPDATE organization_members SET role = $3 WHERE organization_id = $1 AND user_id = $2', [orgId, target, dto.role]);
+    if (current.role === 'owner')
+      throw new ForbiddenException('The organization owner role cannot be changed here');
+    if (dto.role === 'admin' && actorRole !== 'owner')
+      throw new ForbiddenException('Only the owner can grant the administrator role');
+    await this.db.query(
+      'UPDATE organization_members SET role = $3 WHERE organization_id = $1 AND user_id = $2',
+      [orgId, target, dto.role],
+    );
     await this.audit.record({
       action: 'org.member_role_changed',
       actorUserId: user.userId,
@@ -186,7 +246,10 @@ export class OrganizationsController {
       details: { from: current.role, to: dto.role },
     });
     if (['admin', 'security_analyst', 'auditor'].includes(dto.role)) {
-      const owner = await this.db.one<{ user_id: string }>(`SELECT user_id FROM organization_members WHERE organization_id = $1 AND role = 'owner'`, [orgId]);
+      const owner = await this.db.one<{ user_id: string }>(
+        `SELECT user_id FROM organization_members WHERE organization_id = $1 AND role = 'owner'`,
+        [orgId],
+      );
       if (owner) {
         await this.alerts.create({
           ownerUserId: owner.user_id,
@@ -205,15 +268,28 @@ export class OrganizationsController {
   }
 
   @Delete('organizations/:id/members/:userId')
-  async removeMember(@CurrentUser() user: UserAuth, @Param('id') id: string, @Param('userId') userId: string) {
+  async removeMember(
+    @CurrentUser() user: UserAuth,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
     const orgId = parse(uuidParam, id);
     const target = parse(uuidParam, userId);
-    if (target !== user.userId) await this.access.requireOrgPermission(user, orgId, 'members.manage');
-    const current = await this.db.one<{ role: string }>('SELECT role FROM organization_members WHERE organization_id = $1 AND user_id = $2', [orgId, target]);
+    if (target !== user.userId)
+      await this.access.requireOrgPermission(user, orgId, 'members.manage');
+    const current = await this.db.one<{ role: string }>(
+      'SELECT role FROM organization_members WHERE organization_id = $1 AND user_id = $2',
+      [orgId, target],
+    );
     if (!current) throw new NotFoundException('Member not found');
-    if (current.role === 'owner') throw new ForbiddenException('Transfer ownership before removing the owner');
+    if (current.role === 'owner')
+      throw new ForbiddenException('Transfer ownership before removing the owner');
     await this.db.tx(async (c) => {
-      await this.db.query('DELETE FROM organization_members WHERE organization_id = $1 AND user_id = $2', [orgId, target], c);
+      await this.db.query(
+        'DELETE FROM organization_members WHERE organization_id = $1 AND user_id = $2',
+        [orgId, target],
+        c,
+      );
       // Their enrolled business devices stay with the organization but stop uploading until re-enrolled.
       await this.db.query(
         `UPDATE device_credentials SET revoked_at = now() WHERE revoked_at IS NULL AND device_id IN
@@ -221,8 +297,21 @@ export class OrganizationsController {
         [orgId, target],
         c,
       );
-      await this.db.query(`UPDATE devices SET status = 'revoked', revoked_at = now(), revoked_by = $3 WHERE organization_id = $1 AND owner_user_id = $2 AND status = 'active'`, [orgId, target, user.userId], c);
-      await this.audit.record({ action: 'org.member_removed', actorUserId: user.userId, organizationId: orgId, subjectUserId: target, details: { role: current.role } }, c);
+      await this.db.query(
+        `UPDATE devices SET status = 'revoked', revoked_at = now(), revoked_by = $3 WHERE organization_id = $1 AND owner_user_id = $2 AND status = 'active'`,
+        [orgId, target, user.userId],
+        c,
+      );
+      await this.audit.record(
+        {
+          action: 'org.member_removed',
+          actorUserId: user.userId,
+          organizationId: orgId,
+          subjectUserId: target,
+          details: { role: current.role },
+        },
+        c,
+      );
     });
     return { ok: true };
   }
@@ -243,9 +332,18 @@ export class OrganizationsController {
   @Post('organizations/:id/invitations')
   async invite(@CurrentUser() user: UserAuth, @Param('id') id: string, @Body() body: unknown) {
     const orgId = parse(uuidParam, id);
-    const dto = parse(z.object({ email: z.string().trim().toLowerCase().email(), role: assignableRole.default('member') }).strict(), body);
+    const dto = parse(
+      z
+        .object({
+          email: z.string().trim().toLowerCase().email(),
+          role: assignableRole.default('member'),
+        })
+        .strict(),
+      body,
+    );
     const actorRole = await this.access.requireOrgPermission(user, orgId, 'members.manage');
-    if (dto.role === 'admin' && actorRole !== 'owner') throw new ForbiddenException('Only the owner can invite administrators');
+    if (dto.role === 'admin' && actorRole !== 'owner')
+      throw new ForbiddenException('Only the owner can invite administrators');
     const already = await this.db.one(
       `SELECT 1 FROM organization_members m JOIN users u ON u.id = m.user_id WHERE m.organization_id = $1 AND u.email = $2`,
       [orgId, dto.email],
@@ -257,18 +355,32 @@ export class OrganizationsController {
        VALUES ($1,$2,$3,$4,$5, now() + interval '7 days') RETURNING id, expires_at`,
       [orgId, dto.email, dto.role, sha256(token), user.userId],
     );
-    const org = await this.db.one<{ name: string }>('SELECT name FROM organizations WHERE id = $1', [orgId]);
+    const org = await this.db.one<{ name: string }>(
+      'SELECT name FROM organizations WHERE id = $1',
+      [orgId],
+    );
     await this.mail.send({
       to: dto.email,
       subject: `You're invited to ${org!.name} on TraceVault`,
       text: `${user.email} invited you to join ${org!.name} on TraceVault as ${ROLE_LABELS[dto.role]}.\n\nAccept: ${this.config.webOrigin}/invitations/accept?token=${token}\n\nThe invitation expires in 7 days. Joining lets organization administrators see devices you enroll into the organization. It does not give them access to your personal devices.`,
     });
-    await this.audit.record({ action: 'org.member_invited', actorUserId: user.userId, organizationId: orgId, targetType: 'invitation', targetId: inv!.id, details: { email: dto.email, role: dto.role } });
+    await this.audit.record({
+      action: 'org.member_invited',
+      actorUserId: user.userId,
+      organizationId: orgId,
+      targetType: 'invitation',
+      targetId: inv!.id,
+      details: { email: dto.email, role: dto.role },
+    });
     return { id: inv!.id, email: dto.email, role: dto.role, expires_at: inv!.expires_at };
   }
 
   @Delete('organizations/:id/invitations/:invId')
-  async revokeInvite(@CurrentUser() user: UserAuth, @Param('id') id: string, @Param('invId') invId: string) {
+  async revokeInvite(
+    @CurrentUser() user: UserAuth,
+    @Param('id') id: string,
+    @Param('invId') invId: string,
+  ) {
     const orgId = parse(uuidParam, id);
     await this.access.requireOrgPermission(user, orgId, 'members.manage');
     const row = await this.db.one(
@@ -276,7 +388,13 @@ export class OrganizationsController {
       [parse(uuidParam, invId), orgId],
     );
     if (!row) throw new NotFoundException('Invitation not found');
-    await this.audit.record({ action: 'org.invitation_revoked', actorUserId: user.userId, organizationId: orgId, targetType: 'invitation', targetId: invId });
+    await this.audit.record({
+      action: 'org.invitation_revoked',
+      actorUserId: user.userId,
+      organizationId: orgId,
+      targetType: 'invitation',
+      targetId: invId,
+    });
     return { ok: true };
   }
 
@@ -285,7 +403,12 @@ export class OrganizationsController {
   async accept(@CurrentUser() user: UserAuth, @Body() body: unknown) {
     const dto = parse(z.object({ token: z.string().min(10).max(200) }).strict(), body);
     return this.db.tx(async (c) => {
-      const inv = await this.db.one<{ id: string; organization_id: string; email: string; role: string }>(
+      const inv = await this.db.one<{
+        id: string;
+        organization_id: string;
+        email: string;
+        role: string;
+      }>(
         `SELECT id, organization_id, email, role FROM organization_invitations
           WHERE token_hash = $1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > now() FOR UPDATE`,
         [sha256(dto.token)],
@@ -300,8 +423,21 @@ export class OrganizationsController {
         [inv.organization_id, user.userId, inv.role],
         c,
       );
-      await this.db.query('UPDATE organization_invitations SET accepted_at = now() WHERE id = $1', [inv.id], c);
-      await this.audit.record({ action: 'org.member_joined', actorUserId: user.userId, organizationId: inv.organization_id, subjectUserId: user.userId, details: { role: inv.role } }, c);
+      await this.db.query(
+        'UPDATE organization_invitations SET accepted_at = now() WHERE id = $1',
+        [inv.id],
+        c,
+      );
+      await this.audit.record(
+        {
+          action: 'org.member_joined',
+          actorUserId: user.userId,
+          organizationId: inv.organization_id,
+          subjectUserId: user.userId,
+          details: { role: inv.role },
+        },
+        c,
+      );
       return { organization_id: inv.organization_id, role: inv.role };
     });
   }

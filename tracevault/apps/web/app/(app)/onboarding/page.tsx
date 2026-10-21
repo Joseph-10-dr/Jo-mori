@@ -23,7 +23,10 @@ export default function OnboardingPage() {
 
   return (
     <>
-      <PageHead title="Set up TraceVault" description="Three steps. History only starts once a device is enrolled, so do this before you lend the device out." />
+      <PageHead
+        title="Set up TraceVault"
+        description="Three steps. History only starts once a device is enrolled, so do this before you lend the device out."
+      />
       <div className="stack">
         <Card title={`1. Confirm your email ${user?.email_verified ? '✓' : ''}`}>
           {user?.email_verified ? (
@@ -43,15 +46,23 @@ export default function OnboardingPage() {
         </Card>
         <Card title="2. Enroll your first device">
           <p>
-            Install the TraceVault agent on the device you want to protect, then enter a one-time enrollment code. The agent shows its
-            status at all times and can be paused or removed by the device user.
+            Install the TraceVault agent on the device you want to protect, then enter a one-time
+            enrollment code. The agent shows its status at all times and can be paused or removed by
+            the device user.
           </p>
-          <Link className="tv-btn tv-btn--primary" href="/devices/enroll" aria-disabled={!user?.email_verified}>
+          <Link
+            className="tv-btn tv-btn--primary"
+            href="/devices/enroll"
+            aria-disabled={!user?.email_verified}
+          >
             Get an enrollment code
           </Link>
         </Card>
         <Card title="3. Choose how you’re alerted">
-          <p>Email alerts are on for medium-severity events and above, and for new sign-ins to your account.</p>
+          <p>
+            Email alerts are on for medium-severity events and above, and for new sign-ins to your
+            account.
+          </p>
           <Link className="tv-btn" href="/settings#notifications">
             Review notification settings
           </Link>
@@ -59,8 +70,9 @@ export default function OnboardingPage() {
         {business && (
           <Card title="Setting up for a business?">
             <p>
-              Create an organization to invite colleagues, assign roles and enroll company-owned devices. Tell staff which devices are
-              monitored and what is collected; a subscription alone does not authorize monitoring employees.
+              Create an organization to invite colleagues, assign roles and enroll company-owned
+              devices. Tell staff which devices are monitored and what is collected; a subscription
+              alone does not authorize monitoring employees.
             </p>
             <Link className="tv-btn" href="/organizations">
               Create an organization

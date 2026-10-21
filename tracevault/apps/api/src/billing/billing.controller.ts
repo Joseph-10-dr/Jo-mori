@@ -23,9 +23,20 @@ export class BillingController {
 
   @Get()
   async summary(@CurrentUser() user: UserAuth, @Query() q: unknown) {
-    const f = parse(z.object({ organization_id: z.string().uuid().optional(), region: z.string().regex(/^[A-Z]{2}$/).optional() }), q);
+    const f = parse(
+      z.object({
+        organization_id: z.string().uuid().optional(),
+        region: z
+          .string()
+          .regex(/^[A-Z]{2}$/)
+          .optional(),
+      }),
+      q,
+    );
     if (f.organization_id) await this.access.requireMembership(user.userId, f.organization_id);
-    const scope = f.organization_id ? { userId: null, organizationId: f.organization_id } : { userId: user.userId, organizationId: null };
+    const scope = f.organization_id
+      ? { userId: null, organizationId: f.organization_id }
+      : { userId: user.userId, organizationId: null };
     const { plan, limits, status } = await this.usage.plan(scope);
     const scopeSql = f.organization_id ? 'organization_id = $1' : 'user_id = $1';
     const usage = await this.db.query(
@@ -50,7 +61,11 @@ export class BillingController {
       plan,
       status,
       limits,
-      plans: PLAN_IDS.map((id) => ({ id, limits: PLAN_LIMITS[id], price: prices.find((p) => p.plan === id) ?? null })),
+      plans: PLAN_IDS.map((id) => ({
+        id,
+        limits: PLAN_LIMITS[id],
+        price: prices.find((p) => p.plan === id) ?? null,
+      })),
       usage_this_month: Object.fromEntries(usage.map((u) => [u.metric, Number(u.quantity)])),
       active_devices: devices?.n ?? 0,
       recording_bytes_used: await this.usage.recordingBytesUsed(scope),
@@ -62,14 +77,25 @@ export class BillingController {
   /** Development/staging only until a payment provider is integrated. */
   @Post('plan')
   async changePlan(@CurrentUser() user: UserAuth, @Body() body: unknown) {
-    if (!this.config.billingSelfServe) throw new ForbiddenException('Plan changes are handled by billing support');
-    const dto = parse(z.object({ plan: z.enum(PLAN_IDS), organization_id: z.string().uuid().optional() }).strict(), body);
+    if (!this.config.billingSelfServe)
+      throw new ForbiddenException('Plan changes are handled by billing support');
+    const dto = parse(
+      z.object({ plan: z.enum(PLAN_IDS), organization_id: z.string().uuid().optional() }).strict(),
+      body,
+    );
     if (dto.organization_id) {
       await this.access.requireOrgPermission(user, dto.organization_id, 'org.manage');
-      await this.db.query('UPDATE subscriptions SET plan = $2 WHERE organization_id = $1', [dto.organization_id, dto.plan]);
+      await this.db.query('UPDATE subscriptions SET plan = $2 WHERE organization_id = $1', [
+        dto.organization_id,
+        dto.plan,
+      ]);
     } else {
-      if (dto.plan === 'business') throw new ForbiddenException('Create an organization to use the Business plan');
-      await this.db.query('UPDATE subscriptions SET plan = $2 WHERE user_id = $1', [user.userId, dto.plan]);
+      if (dto.plan === 'business')
+        throw new ForbiddenException('Create an organization to use the Business plan');
+      await this.db.query('UPDATE subscriptions SET plan = $2 WHERE user_id = $1', [
+        user.userId,
+        dto.plan,
+      ]);
       // Keep retention inside the new plan's bounds.
       const max = PLAN_LIMITS[dto.plan].retentionDaysMax;
       await this.db.query(
@@ -77,7 +103,13 @@ export class BillingController {
         [user.userId, max],
       );
     }
-    await this.audit.record({ action: 'billing.plan_changed', actorUserId: user.userId, organizationId: dto.organization_id ?? null, subjectUserId: user.userId, details: { plan: dto.plan } });
+    await this.audit.record({
+      action: 'billing.plan_changed',
+      actorUserId: user.userId,
+      organizationId: dto.organization_id ?? null,
+      subjectUserId: user.userId,
+      details: { plan: dto.plan },
+    });
     return { plan: dto.plan };
   }
 }

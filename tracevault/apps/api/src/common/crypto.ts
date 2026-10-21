@@ -1,4 +1,11 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from 'crypto';
 
 /** URL-safe random token with a readable prefix (e.g. tvs_ for sessions). */
 export function randomToken(prefix: string, bytes = 32): string {
@@ -15,7 +22,10 @@ export function enrollmentCode(): string {
 }
 
 export function normalizeEnrollmentCode(code: string): string {
-  return code.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^(.{5})(.{5})$/, '$1-$2');
+  return code
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .replace(/^(.{5})(.{5})$/, '$1-$2');
 }
 
 export function sha256(value: string | Buffer): Buffer {

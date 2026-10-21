@@ -39,11 +39,13 @@ export const CurrentUser = createParamDecorator((_: unknown, ctx: ExecutionConte
   return auth;
 });
 
-export const CurrentDevice = createParamDecorator((_: unknown, ctx: ExecutionContext): DeviceAuth => {
-  const auth = ctx.switchToHttp().getRequest<AuthedRequest>().auth;
-  if (!auth || auth.kind !== 'device') throw new Error('CurrentDevice used on non-device route');
-  return auth;
-});
+export const CurrentDevice = createParamDecorator(
+  (_: unknown, ctx: ExecutionContext): DeviceAuth => {
+    const auth = ctx.switchToHttp().getRequest<AuthedRequest>().auth;
+    if (!auth || auth.kind !== 'device') throw new Error('CurrentDevice used on non-device route');
+    return auth;
+  },
+);
 
 export function clientIp(req: Request): string | null {
   return req.ip?.replace(/^::ffff:/, '') || null;

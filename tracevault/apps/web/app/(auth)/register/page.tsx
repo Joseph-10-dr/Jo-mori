@@ -33,7 +33,10 @@ function RegisterForm() {
         account_type: type,
       };
       await api('/v1/auth/register', { method: 'POST', body });
-      await api('/v1/auth/login', { method: 'POST', body: { email: body.email, password: body.password } });
+      await api('/v1/auth/login', {
+        method: 'POST',
+        body: { email: body.email, password: body.password },
+      });
       await session.refresh();
       router.replace('/onboarding');
     } catch (err) {
@@ -59,8 +62,18 @@ function RegisterForm() {
           <legend style={{ fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Account type</legend>
           <div className="tv-row">
             {(['personal', 'business'] as const).map((t) => (
-              <label key={t} className="tv-btn tv-btn--sm" style={{ background: type === t ? 'var(--tv-info-bg)' : undefined }}>
-                <input type="radio" name="type" value={t} checked={type === t} onChange={() => setType(t)} />
+              <label
+                key={t}
+                className="tv-btn tv-btn--sm"
+                style={{ background: type === t ? 'var(--tv-info-bg)' : undefined }}
+              >
+                <input
+                  type="radio"
+                  name="type"
+                  value={t}
+                  checked={type === t}
+                  onChange={() => setType(t)}
+                />
                 {t === 'personal' ? 'Personal' : 'Business'}
               </label>
             ))}
@@ -70,17 +83,46 @@ function RegisterForm() {
           <input className="tv-input" id="name" name="name" autoComplete="name" maxLength={80} />
         </Field>
         <Field label="Email" htmlFor="email" hint="We’ll send a link to confirm it.">
-          <input className="tv-input" id="email" name="email" type="email" autoComplete="email" required aria-describedby="email-hint" />
+          <input
+            className="tv-input"
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            aria-describedby="email-hint"
+          />
         </Field>
-        <Field label="Password" htmlFor="password" hint="At least 10 characters. A passphrase of several words works well.">
-          <input className="tv-input" id="password" name="password" type="password" autoComplete="new-password" minLength={10} required aria-describedby="password-hint" />
+        <Field
+          label="Password"
+          htmlFor="password"
+          hint="At least 10 characters. A passphrase of several words works well."
+        >
+          <input
+            className="tv-input"
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            minLength={10}
+            required
+            aria-describedby="password-hint"
+          />
         </Field>
         <Field label="Confirm password" htmlFor="confirm">
-          <input className="tv-input" id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={10} required />
+          <input
+            className="tv-input"
+            id="confirm"
+            name="confirm"
+            type="password"
+            autoComplete="new-password"
+            minLength={10}
+            required
+          />
         </Field>
         <p className="tv-small tv-muted">
-          By creating an account you agree to use TraceVault only on devices you own or are authorized to monitor. See the{' '}
-          <Link href="/help#privacy">privacy summary</Link>.
+          By creating an account you agree to use TraceVault only on devices you own or are
+          authorized to monitor. See the <Link href="/help#privacy">privacy summary</Link>.
         </p>
         <Button variant="primary" type="submit" disabled={busy}>
           {busy ? 'Creating account…' : 'Create account'}

@@ -17,7 +17,9 @@ export function parse<S extends ZodTypeAny>(schema: S, value: unknown): z.output
   if (!r.success) {
     throw new BadRequestException({
       message: 'Request validation failed',
-      details: r.error.issues.slice(0, 10).map((i) => ({ path: i.path.join('.'), message: i.message })),
+      details: r.error.issues
+        .slice(0, 10)
+        .map((i) => ({ path: i.path.join('.'), message: i.message })),
     });
   }
   return r.data;
@@ -47,7 +49,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
     // body-parser errors (oversized / malformed JSON)
     const e = exception as { type?: string; status?: number; message?: string };
     if (e?.type === 'entity.too.large') {
-      res.status(413).json({ statusCode: 413, error: 'Payload Too Large', message: 'Request body too large' });
+      res
+        .status(413)
+        .json({ statusCode: 413, error: 'Payload Too Large', message: 'Request body too large' });
       return;
     }
     if (e?.type === 'entity.parse.failed') {

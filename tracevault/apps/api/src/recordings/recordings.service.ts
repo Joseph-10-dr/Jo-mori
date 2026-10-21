@@ -74,7 +74,9 @@ export class RecordingsService {
 
   async createUpload(device: DeviceAuth, req: UploadRequest) {
     if (!ALLOWED_MIME[req.kind].includes(req.mime_type)) {
-      throw new BadRequestException(`mime_type ${req.mime_type} is not allowed for ${req.kind} recordings`);
+      throw new BadRequestException(
+        `mime_type ${req.mime_type} is not allowed for ${req.kind} recordings`,
+      );
     }
     const started = new Date(req.started_at);
     const stopped = new Date(req.stopped_at);
@@ -84,14 +86,19 @@ export class RecordingsService {
       throw new ForbiddenException('The operating-system capture permission was not granted');
     }
     if (!req.consent.indicator_shown) {
-      throw new ForbiddenException('Recordings are only accepted when a visible recording indicator was shown');
+      throw new ForbiddenException(
+        'Recordings are only accepted when a visible recording indicator was shown',
+      );
     }
     if (device.organizationId) {
-      const org = await this.db.one<{ recordings_allowed: boolean }>('SELECT recordings_allowed FROM organizations WHERE id = $1', [
-        device.organizationId,
-      ]);
+      const org = await this.db.one<{ recordings_allowed: boolean }>(
+        'SELECT recordings_allowed FROM organizations WHERE id = $1',
+        [device.organizationId],
+      );
       if (!org?.recordings_allowed) {
-        throw new ForbiddenException('Your organization has not enabled recordings for managed devices');
+        throw new ForbiddenException(
+          'Your organization has not enabled recordings for managed devices',
+        );
       }
     }
     const scope = UsageService.scopeFor(device.ownerUserId, device.organizationId);
@@ -100,11 +107,15 @@ export class RecordingsService {
       throw new ForbiddenException(`Recordings are not included in the ${plan} plan`);
     }
     if (seconds > limits.maxRecordingSeconds) {
-      throw new BadRequestException(`Recording is longer than the ${limits.maxRecordingSeconds}-second limit for your plan`);
+      throw new BadRequestException(
+        `Recording is longer than the ${limits.maxRecordingSeconds}-second limit for your plan`,
+      );
     }
     const used = await this.usage.recordingBytesUsed(scope);
     if (used + req.size_bytes > limits.recordingStorageBytes) {
-      throw new PayloadTooLargeException('Recording storage quota exceeded. Delete old recordings or change plan.');
+      throw new PayloadTooLargeException(
+        'Recording storage quota exceeded. Delete old recordings or change plan.',
+      );
     }
     const retention = await this.db.one<{ days: number }>(
       device.organizationId
@@ -120,15 +131,38 @@ export class RecordingsService {
             started_at, stopped_at, expires_at)
          VALUES ($1,$2,$3,$4, 'pending/' || gen_random_uuid(), $5,$6,$7,$8,$9, $9::timestamptz + ($10 || ' days')::interval)
          RETURNING id`,
-        [device.deviceId, device.ownerUserId, device.organizationId, req.kind, req.mime_type, req.size_bytes, req.sha256_hex.toLowerCase(), started, stopped, String(days)],
+        [
+          device.deviceId,
+          device.ownerUserId,
+          device.organizationId,
+          req.kind,
+          req.mime_type,
+          req.size_bytes,
+          req.sha256_hex.toLowerCase(),
+          started,
+          stopped,
+          String(days),
+        ],
         c,
       );
       const storageKey = `${device.organizationId ?? device.ownerUserId}/${rec!.id}`;
-      await this.db.query('UPDATE recordings SET storage_key = $2 WHERE id = $1', [rec!.id, storageKey], c);
+      await this.db.query(
+        'UPDATE recordings SET storage_key = $2 WHERE id = $1',
+        [rec!.id, storageKey],
+        c,
+      );
       await this.db.query(
         `INSERT INTO recording_consents (recording_id, device_id, consenting_party, consent_text, os_permission, indicator_shown, consented_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-        [rec!.id, device.deviceId, req.consent.consenting_party, req.consent.consent_text, req.consent.os_permission, req.consent.indicator_shown, req.consent.consented_at],
+        [
+          rec!.id,
+          device.deviceId,
+          req.consent.consenting_party,
+          req.consent.consent_text,
+          req.consent.os_permission,
+          req.consent.indicator_shown,
+          req.consent.consented_at,
+        ],
         c,
       );
       const ticket = await this.db.one<{ id: string; expires_at: Date }>(
@@ -162,9 +196,19 @@ export class RecordingsService {
   }
 
   /** Validates signature, expiry and single use; marks the ticket used atomically. */
-  private async consumeTicket(ticketId: string, purpose: 'upload' | 'download', exp: string, sig: string) {
+  private async consumeTicket(
+    ticketId: string,
+    purpose: 'upload' | 'download',
+    exp: string,
+    sig: string,
+  ) {
     const expNum = Number(exp);
-    if (!/^[0-9a-f-]{36}$/i.test(ticketId) || !Number.isInteger(expNum) || !sig || !safeEqual(sig, this.sign(ticketId, purpose, expNum))) {
+    if (
+      !/^[0-9a-f-]{36}$/i.test(ticketId) ||
+      !Number.isInteger(expNum) ||
+      !sig ||
+      !safeEqual(sig, this.sign(ticketId, purpose, expNum))
+    ) {
       throw new ForbiddenException('Invalid signature');
     }
     if (expNum * 1000 < Date.now()) throw new GoneException('This link has expired');
@@ -177,19 +221,33 @@ export class RecordingsService {
     return t.recording_id;
   }
 
-  async receiveUpload(ticketId: string, exp: string, sig: string, contentType: string | undefined, body: Readable) {
+  async receiveUpload(
+    ticketId: string,
+    exp: string,
+    sig: string,
+    contentType: string | undefined,
+    body: Readable,
+  ) {
     const recordingId = await this.consumeTicket(ticketId, 'upload', exp, sig);
-    const rec = await this.db.one<{ storage_key: string; declared_bytes: string; mime_type: string; status: string }>(
-      'SELECT storage_key, declared_bytes, mime_type, status FROM recordings WHERE id = $1',
-      [recordingId],
-    );
-    if (!rec || rec.status !== 'pending_upload') throw new GoneException('Recording is not awaiting upload');
+    const rec = await this.db.one<{
+      storage_key: string;
+      declared_bytes: string;
+      mime_type: string;
+      status: string;
+    }>('SELECT storage_key, declared_bytes, mime_type, status FROM recordings WHERE id = $1', [
+      recordingId,
+    ]);
+    if (!rec || rec.status !== 'pending_upload')
+      throw new GoneException('Recording is not awaiting upload');
     if ((contentType ?? '').split(';')[0].trim() !== rec.mime_type) {
       throw new BadRequestException(`Content-Type must be ${rec.mime_type}`);
     }
     try {
       const stored = await this.storage.put(rec.storage_key, body, Number(rec.declared_bytes));
-      await this.db.query('UPDATE recordings SET size_bytes = $2 WHERE id = $1', [recordingId, stored.size]);
+      await this.db.query('UPDATE recordings SET size_bytes = $2 WHERE id = $1', [
+        recordingId,
+        stored.size,
+      ]);
       return { received_bytes: stored.size };
     } catch (err) {
       if (err instanceof ObjectTooLargeError) {
@@ -202,7 +260,14 @@ export class RecordingsService {
 
   /** Device confirms the upload; the server re-hashes the stored object before making it available. */
   async complete(device: DeviceAuth, id: string) {
-    const rec = await this.db.one<{ id: string; storage_key: string; declared_bytes: string; size_bytes: string | null; sha256_hex: string; status: string }>(
+    const rec = await this.db.one<{
+      id: string;
+      storage_key: string;
+      declared_bytes: string;
+      size_bytes: string | null;
+      sha256_hex: string;
+      status: string;
+    }>(
       `SELECT id, storage_key, declared_bytes, size_bytes, sha256_hex, status FROM recordings WHERE id = $1 AND device_id = $2`,
       [id, device.deviceId],
     );
@@ -221,21 +286,35 @@ export class RecordingsService {
     } catch {
       actual = null;
     }
-    const ok = actual && actual.size === Number(rec.declared_bytes) && actual.sha === rec.sha256_hex;
+    const ok =
+      actual && actual.size === Number(rec.declared_bytes) && actual.sha === rec.sha256_hex;
     if (!ok) {
       await this.storage.delete(rec.storage_key);
       await this.db.query(`UPDATE recordings SET status = 'failed' WHERE id = $1`, [rec.id]);
-      throw new BadRequestException(actual ? 'Uploaded file does not match the declared size or SHA-256' : 'No uploaded file found');
+      throw new BadRequestException(
+        actual
+          ? 'Uploaded file does not match the declared size or SHA-256'
+          : 'No uploaded file found',
+      );
     }
-    await this.db.query(`UPDATE recordings SET status = 'available', completed_at = now() WHERE id = $1`, [rec.id]);
-    await this.usage.add(UsageService.scopeFor(device.ownerUserId, device.organizationId), 'recording_bytes_stored', actual!.size);
+    await this.db.query(
+      `UPDATE recordings SET status = 'available', completed_at = now() WHERE id = $1`,
+      [rec.id],
+    );
+    await this.usage.add(
+      UsageService.scopeFor(device.ownerUserId, device.organizationId),
+      'recording_bytes_stored',
+      actual!.size,
+    );
     return { status: 'available' };
   }
 
   async list(user: UserAuth) {
     const scope = await this.access.scope(user.userId);
     // Recordings: own, or orgs where the role explicitly has recordings.view (owner only by default).
-    const orgIds = [...scope.roles].filter(([, r]) => roleHas(r, 'recordings.view')).map(([id]) => id);
+    const orgIds = [...scope.roles]
+      .filter(([, r]) => roleHas(r, 'recordings.view'))
+      .map(([id]) => id);
     return this.db.query(
       `SELECT ${RECORDING_COLUMNS} FROM recordings r JOIN devices d ON d.id = r.device_id
         WHERE ${AccessService.visibleSql('r', 1, 2)} AND r.status <> 'deleted' ORDER BY r.created_at DESC LIMIT 200`,
@@ -244,7 +323,15 @@ export class RecordingsService {
   }
 
   private async loadForAccess(user: UserAuth, id: string) {
-    const rec = await this.db.one<{ id: string; owner_user_id: string; organization_id: string | null; storage_key: string; status: string; mime_type: string; size_bytes: string }>(
+    const rec = await this.db.one<{
+      id: string;
+      owner_user_id: string;
+      organization_id: string | null;
+      storage_key: string;
+      status: string;
+      mime_type: string;
+      size_bytes: string;
+    }>(
       `SELECT r.id, r.owner_user_id, r.organization_id, r.storage_key, r.status, r.mime_type, coalesce(r.size_bytes, r.declared_bytes) AS size_bytes
          FROM recordings r WHERE r.id = $1`,
       [id],
@@ -278,17 +365,32 @@ export class RecordingsService {
       sensitive: true,
     });
     const exp = Math.floor(t!.expires_at.getTime() / 1000);
-    return { download_url: this.signedUrl(t!.id, 'download', exp), expires_at: t!.expires_at.toISOString() };
+    return {
+      download_url: this.signedUrl(t!.id, 'download', exp),
+      expires_at: t!.expires_at.toISOString(),
+    };
   }
 
   async openDownload(ticketId: string, exp: string, sig: string) {
     const recordingId = await this.consumeTicket(ticketId, 'download', exp, sig);
-    const rec = await this.db.one<{ storage_key: string; mime_type: string; size_bytes: string; owner_user_id: string; organization_id: string | null; status: string }>(
+    const rec = await this.db.one<{
+      storage_key: string;
+      mime_type: string;
+      size_bytes: string;
+      owner_user_id: string;
+      organization_id: string | null;
+      status: string;
+    }>(
       'SELECT storage_key, mime_type, size_bytes, owner_user_id, organization_id, status FROM recordings WHERE id = $1',
       [recordingId],
     );
-    if (!rec || rec.status !== 'available') throw new GoneException('Recording is no longer available');
-    await this.usage.add(UsageService.scopeFor(rec.owner_user_id, rec.organization_id), 'recording_bytes_downloaded', Number(rec.size_bytes));
+    if (!rec || rec.status !== 'available')
+      throw new GoneException('Recording is no longer available');
+    await this.usage.add(
+      UsageService.scopeFor(rec.owner_user_id, rec.organization_id),
+      'recording_bytes_downloaded',
+      Number(rec.size_bytes),
+    );
     await this.audit.record({
       action: 'recording.downloaded',
       organizationId: rec.organization_id,
@@ -297,13 +399,20 @@ export class RecordingsService {
       targetId: recordingId,
       sensitive: true,
     });
-    return { stream: await this.storage.get(rec.storage_key), mime: rec.mime_type, size: Number(rec.size_bytes) };
+    return {
+      stream: await this.storage.get(rec.storage_key),
+      mime: rec.mime_type,
+      size: Number(rec.size_bytes),
+    };
   }
 
   async remove(user: UserAuth, id: string) {
     const rec = await this.loadForAccess(user, id);
     await this.storage.delete(rec.storage_key);
-    await this.db.query(`UPDATE recordings SET status = 'deleted', deleted_at = now() WHERE id = $1`, [rec.id]);
+    await this.db.query(
+      `UPDATE recordings SET status = 'deleted', deleted_at = now() WHERE id = $1`,
+      [rec.id],
+    );
     await this.audit.record({
       action: 'recording.deleted',
       actorUserId: user.userId,
@@ -316,14 +425,22 @@ export class RecordingsService {
   }
 
   async deleteObjectsForDevice(deviceId: string) {
-    const rows = await this.db.query<{ storage_key: string }>('SELECT storage_key FROM recordings WHERE device_id = $1', [deviceId]);
+    const rows = await this.db.query<{ storage_key: string }>(
+      'SELECT storage_key FROM recordings WHERE device_id = $1',
+      [deviceId],
+    );
     for (const r of rows) await this.storage.delete(r.storage_key);
   }
 
   async deleteObjectsWhere(sql: string, params: unknown[]) {
-    const rows = await this.db.query<{ id: string; storage_key: string }>(`SELECT id, storage_key FROM recordings WHERE ${sql}`, params);
+    const rows = await this.db.query<{ id: string; storage_key: string }>(
+      `SELECT id, storage_key FROM recordings WHERE ${sql}`,
+      params,
+    );
     for (const r of rows) {
-      await this.storage.delete(r.storage_key).catch((err) => this.logger.error(`delete ${r.id} failed: ${(err as Error).message}`));
+      await this.storage
+        .delete(r.storage_key)
+        .catch((err) => this.logger.error(`delete ${r.id} failed: ${(err as Error).message}`));
     }
     return rows.map((r) => r.id);
   }

@@ -1,4 +1,14 @@
-import { Body, Controller, ForbiddenException, Get, HttpCode, NotFoundException, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { roleHas } from '@tracevault/api-contracts';
 import { z } from 'zod';
@@ -41,7 +51,10 @@ export class AlertsController {
     if (f.severity) where.push(`a.severity = $${params.push(f.severity)}`);
     if (f.device_id) where.push(`a.device_id = $${params.push(f.device_id)}`);
     const c = decodeCursor(f.cursor);
-    if (c) where.push(`(a.created_at, a.id) < ($${params.push(c.ts)}::timestamptz, $${params.push(c.id)}::uuid)`);
+    if (c)
+      where.push(
+        `(a.created_at, a.id) < ($${params.push(c.ts)}::timestamptz, $${params.push(c.id)}::uuid)`,
+      );
     const rows = await this.db.query<{ id: string; created_at: Date }>(
       `SELECT ${ALERT_COLUMNS} FROM security_alerts a LEFT JOIN devices d ON d.id = a.device_id
         WHERE ${where.join(' AND ')} ORDER BY a.created_at DESC, a.id DESC LIMIT ${f.limit + 1}`,
@@ -55,14 +68,20 @@ export class AlertsController {
     );
     return {
       items,
-      next_cursor: more ? encodeCursor(items[items.length - 1].created_at, items[items.length - 1].id) : null,
+      next_cursor: more
+        ? encodeCursor(items[items.length - 1].created_at, items[items.length - 1].id)
+        : null,
       open_by_severity: Object.fromEntries(counts.map((r) => [r.severity, r.n])),
     };
   }
 
   private async load(user: UserAuth, id: string) {
     const scope = await this.access.scope(user.userId);
-    const a = await this.db.one<{ id: string; owner_user_id: string; organization_id: string | null }>(
+    const a = await this.db.one<{
+      id: string;
+      owner_user_id: string;
+      organization_id: string | null;
+    }>(
       `SELECT ${ALERT_COLUMNS} FROM security_alerts a LEFT JOIN devices d ON d.id = a.device_id
         WHERE a.id = $3 AND ${AccessService.visibleSql('a', 1, 2)}`,
       [scope.userId, scope.viewAllOrgIds, parse(uuidParam, id)],
@@ -80,7 +99,10 @@ export class AlertsController {
   @HttpCode(200)
   async resolve(@CurrentUser() user: UserAuth, @Param('id') id: string, @Body() body: unknown) {
     const dto = parse(
-      z.object({ status: z.enum(['resolved', 'dismissed']).default('resolved'), note: z.string().trim().max(1000).optional() }),
+      z.object({
+        status: z.enum(['resolved', 'dismissed']).default('resolved'),
+        note: z.string().trim().max(1000).optional(),
+      }),
       body ?? {},
     );
     const { a, scope } = await this.load(user, id);

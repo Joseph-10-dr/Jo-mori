@@ -1,10 +1,29 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { EVENT_SOURCES } from '@tracevault/event-schema';
 import type { Request } from 'express';
 import { z } from 'zod';
-import { clientIp, CurrentDevice, CurrentUser, DeviceAuth, DeviceOnly, Public, UserAuth } from '../common/auth-context';
+import {
+  clientIp,
+  CurrentDevice,
+  CurrentUser,
+  DeviceAuth,
+  DeviceOnly,
+  Public,
+  UserAuth,
+} from '../common/auth-context';
 import { parse, uuidParam } from '../common/http';
 import { Db } from '../db/db.service';
 import { RecordingsService } from '../recordings/recordings.service';
@@ -15,13 +34,24 @@ const permissionState = z.enum(['granted', 'denied', 'unsupported', 'unknown']);
 
 /** Official lost-device and account-security pages. TraceVault links to them; it cannot lock, wipe or locate devices itself. */
 const RECOVERY_LINKS: Record<string, { label: string; url: string }[]> = {
-  windows: [{ label: 'Microsoft: Find and lock a lost Windows device', url: 'https://account.microsoft.com/devices' }],
+  windows: [
+    {
+      label: 'Microsoft: Find and lock a lost Windows device',
+      url: 'https://account.microsoft.com/devices',
+    },
+  ],
   macos: [{ label: 'Apple: Find My (lock or erase a Mac)', url: 'https://www.icloud.com/find' }],
   ios: [{ label: 'Apple: Find My (lost iPhone)', url: 'https://www.icloud.com/find' }],
   android: [{ label: 'Google: Find My Device', url: 'https://www.google.com/android/find' }],
   common: [
-    { label: 'Google account: sign out of a lost device', url: 'https://myaccount.google.com/device-activity' },
-    { label: 'Microsoft account: security & sign-in activity', url: 'https://account.microsoft.com/security' },
+    {
+      label: 'Google account: sign out of a lost device',
+      url: 'https://myaccount.google.com/device-activity',
+    },
+    {
+      label: 'Microsoft account: security & sign-in activity',
+      url: 'https://account.microsoft.com/security',
+    },
     { label: 'Apple ID: remove a device', url: 'https://account.apple.com/account/manage' },
   ],
 };
@@ -113,10 +143,15 @@ export class DevicesController {
   @Get()
   async list(@CurrentUser() user: UserAuth, @Query() q: unknown) {
     const f = parse(
-      z.object({ status: z.enum(['active', 'revoked']).optional(), organization_id: z.string().uuid().optional() }),
+      z.object({
+        status: z.enum(['active', 'revoked']).optional(),
+        organization_id: z.string().uuid().optional(),
+      }),
       q,
     );
-    return { items: await this.devices.list(user, { status: f.status, organizationId: f.organization_id }) };
+    return {
+      items: await this.devices.list(user, { status: f.status, organizationId: f.organization_id }),
+    };
   }
 
   @Get(':id')

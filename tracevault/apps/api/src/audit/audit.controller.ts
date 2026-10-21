@@ -22,7 +22,10 @@ export class AuditController {
     const f = parse(
       z.object({
         organization_id: z.string().uuid().optional(),
-        action: z.string().regex(/^[a-z_.]{1,60}$/).optional(),
+        action: z
+          .string()
+          .regex(/^[a-z_.]{1,60}$/)
+          .optional(),
         sensitive: z.enum(['true', 'false']).optional(),
         before_id: z.coerce.number().int().positive().optional(),
         limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -36,7 +39,9 @@ export class AuditController {
       where.push(`a.organization_id = $${params.push(f.organization_id)}`);
     } else {
       const p = params.push(user.userId);
-      where.push(`(a.subject_user_id = $${p} OR (a.actor_user_id = $${p} AND a.organization_id IS NULL))`);
+      where.push(
+        `(a.subject_user_id = $${p} OR (a.actor_user_id = $${p} AND a.organization_id IS NULL))`,
+      );
     }
     if (f.action) where.push(`a.action LIKE $${params.push(f.action + '%')}`);
     if (f.sensitive) where.push(`a.sensitive = $${params.push(f.sensitive === 'true')}`);

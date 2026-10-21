@@ -1,0 +1,95 @@
+name: TraceVault CI
+
+on:
+  push:
+    paths: ['tracevault/**', '.github/workflows/tracevault-ci.yml']
+  pull_request:
+    paths: ['tracevault/**', '.github/workflows/tracevault-ci.yml']
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: tracevault
+
+jobs:
+  node:
+    name: API, web, security & e2e tests
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tracevault
+          POSTGRES_PASSWORD: tracevault
+          POSTGRES_DB: tracevault_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U tracevault" --health-interval 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://tracevault:tracevault@localhost:5432/tracevault_test
+      E2E_DATABASE_URL: postgres://tracevault:tracevault@localhost:5432/tracevault_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.28.0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: tracevault/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Dependency audit (fail on high/critical)
+        run: pnpm audit --prod --audit-level high
+      - run: pnpm --filter @tracevault/event-schema build && pnpm --filter @tracevault/api-contracts build
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - name: Unit, integration and security tests
+        run: pnpm --filter @tracevault/event-schema test && pnpm --filter @tracevault/api test
+      - name: Create e2e database
+        run: PGPASSWORD=tracevault psql -h localhost -U tracevault -d tracevault_test -c "CREATE DATABASE tracevault_e2e"
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results
+          path: tracevault/test-results/
+          if-no-files-found: ignore
+
+  dotnet-core:
+    name: Windows agent core (cross-platform tests)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - run: dotnet test apps/desktop-windows/tests/TraceVault.Agent.Tests -c Release
+
+  windows-agent:
+    name: Windows agent + tray build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - run: dotnet build apps/desktop-windows/TraceVault.Agent.sln -c Release
+      - run: dotnet build apps/desktop-windows/src/TraceVault.Agent.Tray -c Release
+      - run: dotnet test apps/desktop-windows/tests/TraceVault.Agent.Tests -c Release
+
+  codeql:
+    name: Static analysis (CodeQL)
+    runs-on: ubuntu-24.04
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          source-root: tracevault
+      - uses: github/codeql-action/analyze@v3

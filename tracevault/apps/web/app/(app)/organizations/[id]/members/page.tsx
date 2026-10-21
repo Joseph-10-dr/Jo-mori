@@ -24,12 +24,27 @@ export default function MembersPage() {
   const { user, memberships } = useSession();
   const myRole = memberships.find((m) => m.organization_id === id)?.role;
   const canManage = myRole ? roleHas(myRole, 'members.manage') : false;
-  const members = useApi<{ items: { user_id: string; email: string; display_name: string | null; role: OrgRole; joined_at: string; mfa_enabled: boolean; devices: number }[] }>(
-    `/v1/organizations/${id}/members`,
-  );
-  const invites = useApi<{ items: { id: string; email: string; role: OrgRole; expires_at: string; accepted_at: string | null; revoked_at: string | null }[] }>(
-    canManage ? `/v1/organizations/${id}/invitations` : null,
-  );
+  const members = useApi<{
+    items: {
+      user_id: string;
+      email: string;
+      display_name: string | null;
+      role: OrgRole;
+      joined_at: string;
+      mfa_enabled: boolean;
+      devices: number;
+    }[];
+  }>(`/v1/organizations/${id}/members`);
+  const invites = useApi<{
+    items: {
+      id: string;
+      email: string;
+      role: OrgRole;
+      expires_at: string;
+      accepted_at: string | null;
+      revoked_at: string | null;
+    }[];
+  }>(canManage ? `/v1/organizations/${id}/invitations` : null);
   const [msg, setMsg] = useState<{ tone: 'error' | 'success'; text: string } | null>(null);
 
   async function run(fn: () => Promise<unknown>, ok: string) {
@@ -48,14 +63,20 @@ export default function MembersPage() {
     const form = e.currentTarget;
     const f = new FormData(form);
     run(async () => {
-      await api(`/v1/organizations/${id}/invitations`, { method: 'POST', body: { email: f.get('email'), role: f.get('role') } });
+      await api(`/v1/organizations/${id}/invitations`, {
+        method: 'POST',
+        body: { email: f.get('email'), role: f.get('role') },
+      });
       form.reset();
     }, 'Invitation sent.');
   }
 
   return (
     <>
-      <PageHead title="Members & roles" description={<Link href={`/organizations/${id}`}>Back to organization</Link>} />
+      <PageHead
+        title="Members & roles"
+        description={<Link href={`/organizations/${id}`}>Back to organization</Link>}
+      />
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
       <div className="stack">
         <Card title="Members">
@@ -89,7 +110,16 @@ export default function MembersPage() {
                             className="tv-select"
                             aria-label={`Role for ${m.email}`}
                             value={m.role}
-                            onChange={(e) => run(() => api(`/v1/organizations/${id}/members/${m.user_id}`, { method: 'PATCH', body: { role: e.target.value } }), 'Role updated.')}
+                            onChange={(e) =>
+                              run(
+                                () =>
+                                  api(`/v1/organizations/${id}/members/${m.user_id}`, {
+                                    method: 'PATCH',
+                                    body: { role: e.target.value },
+                                  }),
+                                'Role updated.',
+                              )
+                            }
                           >
                             {ASSIGNABLE.map((r) => (
                               <option key={r} value={r}>
@@ -101,7 +131,13 @@ export default function MembersPage() {
                           ROLE_LABELS[m.role]
                         )}
                       </td>
-                      <td>{m.mfa_enabled ? <Badge tone="ok">On</Badge> : <Badge tone="medium">Off</Badge>}</td>
+                      <td>
+                        {m.mfa_enabled ? (
+                          <Badge tone="ok">On</Badge>
+                        ) : (
+                          <Badge tone="medium">Off</Badge>
+                        )}
+                      </td>
                       <td>{m.devices}</td>
                       <td>
                         <Time iso={m.joined_at} />
@@ -112,8 +148,16 @@ export default function MembersPage() {
                             size="sm"
                             variant="danger"
                             onClick={() =>
-                              window.confirm(`Remove ${m.email}? Their organization devices stop uploading.`) &&
-                              run(() => api(`/v1/organizations/${id}/members/${m.user_id}`, { method: 'DELETE' }), 'Member removed.')
+                              window.confirm(
+                                `Remove ${m.email}? Their organization devices stop uploading.`,
+                              ) &&
+                              run(
+                                () =>
+                                  api(`/v1/organizations/${id}/members/${m.user_id}`, {
+                                    method: 'DELETE',
+                                  }),
+                                'Member removed.',
+                              )
                             }
                           >
                             {m.user_id === user?.id ? 'Leave' : 'Remove'}
@@ -149,16 +193,34 @@ export default function MembersPage() {
               </form>
             </Card>
             <Card title="Pending invitations">
-              {invites.data?.items.filter((i) => !i.accepted_at && !i.revoked_at).length === 0 && <p className="tv-muted">None.</p>}
+              {invites.data?.items.filter((i) => !i.accepted_at && !i.revoked_at).length === 0 && (
+                <p className="tv-muted">None.</p>
+              )}
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {invites.data?.items
                   .filter((i) => !i.accepted_at && !i.revoked_at)
                   .map((i) => (
-                    <li key={i.id} className="tv-row" style={{ justifyContent: 'space-between', padding: '6px 0' }}>
+                    <li
+                      key={i.id}
+                      className="tv-row"
+                      style={{ justifyContent: 'space-between', padding: '6px 0' }}
+                    >
                       <span>
-                        {i.email} · {ROLE_LABELS[i.role]} · expires <Time iso={i.expires_at} relative />
+                        {i.email} · {ROLE_LABELS[i.role]} · expires{' '}
+                        <Time iso={i.expires_at} relative />
                       </span>
-                      <Button size="sm" onClick={() => run(() => api(`/v1/organizations/${id}/invitations/${i.id}`, { method: 'DELETE' }), 'Invitation revoked.')}>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          run(
+                            () =>
+                              api(`/v1/organizations/${id}/invitations/${i.id}`, {
+                                method: 'DELETE',
+                              }),
+                            'Invitation revoked.',
+                          )
+                        }
+                      >
                         Revoke
                       </Button>
                     </li>

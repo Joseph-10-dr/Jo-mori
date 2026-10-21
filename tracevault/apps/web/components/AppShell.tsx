@@ -26,11 +26,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const alerts = useApi<{ open_by_severity: Record<string, number> }>(session.status === 'signed-in' ? '/v1/alerts' : null, { status: 'open', limit: 1 });
+  const alerts = useApi<{ open_by_severity: Record<string, number> }>(
+    session.status === 'signed-in' ? '/v1/alerts' : null,
+    { status: 'open', limit: 1 },
+  );
 
   useEffect(() => {
-    if (session.status === 'signed-out') router.replace(`/login?next=${encodeURIComponent(pathname)}`);
-    if (session.status === 'mfa-pending') router.replace(`/mfa?next=${encodeURIComponent(pathname)}`);
+    if (session.status === 'signed-out')
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    if (session.status === 'mfa-pending')
+      router.replace(`/mfa?next=${encodeURIComponent(pathname)}`);
   }, [session.status, router, pathname]);
   useEffect(() => setOpen(false), [pathname]);
 
@@ -42,7 +47,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
   const openAlerts = Object.values(alerts.data?.open_by_severity ?? {}).reduce((a, b) => a + b, 0);
-  const isActive = (href: string) => (href === '/settings' ? pathname === href : pathname === href || pathname.startsWith(href + '/'));
+  const isActive = (href: string) =>
+    href === '/settings' ? pathname === href : pathname === href || pathname.startsWith(href + '/');
 
   return (
     <div className="shell">
@@ -53,7 +59,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
           TraceVault
         </Link>
-        <Button size="sm" aria-expanded={open} aria-controls="sidebar" onClick={() => setOpen((o) => !o)}>
+        <Button
+          size="sm"
+          aria-expanded={open}
+          aria-controls="sidebar"
+          onClick={() => setOpen((o) => !o)}
+        >
           Menu
         </Button>
       </header>
@@ -67,7 +78,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         {NAV.map((n) => (
           <div key={n.href}>
             {n.section && <div className="nav-section">{n.section}</div>}
-            <Link href={n.href} className="nav-link" aria-current={isActive(n.href) ? 'page' : undefined}>
+            <Link
+              href={n.href}
+              className="nav-link"
+              aria-current={isActive(n.href) ? 'page' : undefined}
+            >
               <span aria-hidden="true" style={{ width: 16, textAlign: 'center' }}>
                 {n.icon}
               </span>
@@ -103,7 +118,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main id="main" className="main">
         {!session.user?.email_verified && (
           <div className="tv-alert tv-alert--warn" role="status">
-            Verify your email address to enroll devices and receive alerts. <Link href="/onboarding">Resend the link</Link>
+            Verify your email address to enroll devices and receive alerts.{' '}
+            <Link href="/onboarding">Resend the link</Link>
           </div>
         )}
         {children}
@@ -112,7 +128,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function PageHead({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
+export function PageHead({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description?: ReactNode;
+  actions?: ReactNode;
+}) {
   return (
     <div className="page-head">
       <div>

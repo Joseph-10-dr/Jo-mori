@@ -1,9 +1,29 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { clientIp, CurrentDevice, CurrentUser, DeviceAuth, DeviceOnly, Public, UserAuth } from '../common/auth-context';
+import {
+  clientIp,
+  CurrentDevice,
+  CurrentUser,
+  DeviceAuth,
+  DeviceOnly,
+  Public,
+  UserAuth,
+} from '../common/auth-context';
 import { parse, uuidParam } from '../common/http';
 import { MAX_RECORDING_BYTES, RecordingsService } from './recordings.service';
 

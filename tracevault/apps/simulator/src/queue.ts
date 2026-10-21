@@ -16,7 +16,10 @@ export class OfflineQueue {
     readonly capacity = 5000,
   ) {
     if (existsSync(file)) {
-      const parsed = JSON.parse(readFileSync(file, 'utf8')) as { events: DeviceEventInput[]; dropped: number };
+      const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+        events: DeviceEventInput[];
+        dropped: number;
+      };
       this.events = parsed.events ?? [];
       this.dropped = parsed.dropped ?? 0;
     }
@@ -48,7 +51,9 @@ export class OfflineQueue {
 
   private persist() {
     const tmp = `${this.file}.tmp`;
-    writeFileSync(tmp, JSON.stringify({ events: this.events, dropped: this.dropped }), { mode: 0o600 });
+    writeFileSync(tmp, JSON.stringify({ events: this.events, dropped: this.dropped }), {
+      mode: 0o600,
+    });
     renameSync(tmp, this.file);
     chmodSync(this.file, 0o600);
   }

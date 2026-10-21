@@ -5,7 +5,15 @@ import { errorMessage } from '@/lib/api';
 import { formatTime, relativeTime, utcTitle } from '@/lib/format';
 
 /** Local time with the zone shown; exact UTC on hover and for screen readers via <time>. */
-export function Time({ iso, relative, seconds }: { iso: string | null | undefined; relative?: boolean; seconds?: boolean }) {
+export function Time({
+  iso,
+  relative,
+  seconds,
+}: {
+  iso: string | null | undefined;
+  relative?: boolean;
+  seconds?: boolean;
+}) {
   if (!iso) return <span className="tv-muted">never</span>;
   return (
     <time dateTime={iso} title={utcTitle(iso)}>
@@ -34,12 +42,21 @@ export function SyncBadge({ status }: { status: string }) {
 
 export function MonitoringBadge({ status }: { status: string }) {
   const tone = status === 'active' ? 'ok' : status === 'paused' ? 'medium' : 'high';
-  const label = { active: 'Monitoring on', paused: 'Monitoring paused', unavailable: 'Monitoring unavailable', disabled: 'Monitoring off' }[status] ?? status;
+  const label =
+    {
+      active: 'Monitoring on',
+      paused: 'Monitoring paused',
+      unavailable: 'Monitoring unavailable',
+      disabled: 'Monitoring off',
+    }[status] ?? status;
   return <Badge tone={tone}>{label}</Badge>;
 }
 
 export function ConfidenceBadge({ confidence }: { confidence: string }) {
-  const label = { confirmed: 'Observed', likely: 'Likely (inferred)', possible: 'Possible (inferred)' }[confidence] ?? confidence;
+  const label =
+    { confirmed: 'Observed', likely: 'Likely (inferred)', possible: 'Possible (inferred)' }[
+      confidence
+    ] ?? confidence;
   return <Badge tone={confidence === 'confirmed' ? 'info' : 'medium'}>{label}</Badge>;
 }
 

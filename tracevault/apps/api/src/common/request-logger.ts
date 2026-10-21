@@ -10,7 +10,9 @@ const logger = new Logger('HTTP');
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const start = Date.now();
   res.on('finish', () => {
-    const path = req.originalUrl.split('?')[0].replace(/\/storage\/(upload|download)\/[^/]+/, '/storage/$1/:ticket');
+    const path = req.originalUrl
+      .split('?')[0]
+      .replace(/\/storage\/(upload|download)\/[^/]+/, '/storage/$1/:ticket');
     logger.log(`${req.method} ${path} ${res.statusCode} ${Date.now() - start}ms`);
   });
   next();

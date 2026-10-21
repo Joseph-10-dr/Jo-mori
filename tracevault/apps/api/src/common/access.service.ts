@@ -29,7 +29,9 @@ export class AccessService {
     return {
       userId,
       roles,
-      viewAllOrgIds: rows.filter((r) => roleHas(r.role, 'devices.view_all')).map((r) => r.organization_id),
+      viewAllOrgIds: rows
+        .filter((r) => roleHas(r.role, 'devices.view_all'))
+        .map((r) => r.organization_id),
     };
   }
 
@@ -50,7 +52,9 @@ export class AccessService {
     if (!roleHas(row.role, perm)) throw new ForbiddenException(`Your role does not allow ${perm}`);
     const privileged = perm !== 'devices.view_all' && perm !== 'audit.view';
     if (privileged && row.require_mfa_for_admins && !user.mfaEnabled) {
-      throw new ForbiddenException('This organization requires multifactor authentication for administrative actions');
+      throw new ForbiddenException(
+        'This organization requires multifactor authentication for administrative actions',
+      );
     }
     return row.role;
   }

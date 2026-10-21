@@ -46,7 +46,11 @@ export class DevicesService {
     private readonly usage: UsageService,
   ) {}
 
-  private async enforceDeviceLimit(ownerUserId: string, organizationId: string | null, client?: Queryable) {
+  private async enforceDeviceLimit(
+    ownerUserId: string,
+    organizationId: string | null,
+    client?: Queryable,
+  ) {
     const scope = UsageService.scopeFor(ownerUserId, organizationId);
     const { limits, plan } = await this.usage.plan(scope);
     const row = await this.db.one<{ n: number }>(
@@ -64,7 +68,8 @@ export class DevicesService {
   }
 
   async createEnrollmentCode(user: UserAuth, organizationId: string | null) {
-    if (!user.emailVerified) throw new ForbiddenException('Verify your email address before enrolling devices');
+    if (!user.emailVerified)
+      throw new ForbiddenException('Verify your email address before enrolling devices');
     if (organizationId) {
       const role = await this.access.requireMembership(user.userId, organizationId);
       const org = await this.db.one<{ member_enrollment_allowed: boolean }>(
@@ -72,7 +77,9 @@ export class DevicesService {
         [organizationId],
       );
       if (!org?.member_enrollment_allowed && !roleHas(role, 'devices.manage_all')) {
-        throw new ForbiddenException('Your organization only allows administrators to enroll devices');
+        throw new ForbiddenException(
+          'Your organization only allows administrators to enroll devices',
+        );
       }
     }
     await this.enforceDeviceLimit(user.userId, organizationId);
@@ -102,16 +109,28 @@ export class DevicesService {
         [sha256(normalizeEnrollmentCode(input.code))],
         c,
       );
-      if (!enrollment) throw new UnauthorizedException('Enrollment code is invalid, expired or already used');
+      if (!enrollment)
+        throw new UnauthorizedException('Enrollment code is invalid, expired or already used');
       await this.enforceDeviceLimit(enrollment.user_id, enrollment.organization_id, c);
       const device = await this.db.one<DeviceRow>(
         `INSERT INTO devices (owner_user_id, organization_id, name, platform, os_version, agent_version)
          VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, name, platform, owner_user_id, organization_id, status`,
-        [enrollment.user_id, enrollment.organization_id, input.name, input.platform, input.osVersion ?? null, input.agentVersion ?? null],
+        [
+          enrollment.user_id,
+          enrollment.organization_id,
+          input.name,
+          input.platform,
+          input.osVersion ?? null,
+          input.agentVersion ?? null,
+        ],
         c,
       );
       const secret = randomToken('tvd');
-      await this.db.query('INSERT INTO device_credentials (device_id, secret_hash) VALUES ($1,$2)', [device!.id, sha256(secret)], c);
+      await this.db.query(
+        'INSERT INTO device_credentials (device_id, secret_hash) VALUES ($1,$2)',
+        [device!.id, sha256(secret)],
+        c,
+      );
       await this.audit.record(
         {
           action: 'device.registered',
@@ -140,7 +159,11 @@ export class DevicesService {
       recommendedAction: 'If you did not enroll this device, revoke it from the Devices page.',
       dedupeKey: `device_registered:${result.device.id}`,
     });
-    return { device_id: result.device.id, device_secret: result.secret, owner_user_id: result.device.owner_user_id };
+    return {
+      device_id: result.device.id,
+      device_secret: result.secret,
+      owner_user_id: result.device.owner_user_id,
+    };
   }
 
   async list(user: UserAuth, filter: { status?: string; organizationId?: string }) {
@@ -148,7 +171,8 @@ export class DevicesService {
     const params: unknown[] = [scope.userId, scope.viewAllOrgIds];
     const where = [AccessService.visibleSql('d', 1, 2)];
     if (filter.status) where.push(`d.status = $${params.push(filter.status)}`);
-    if (filter.organizationId) where.push(`d.organization_id = $${params.push(filter.organizationId)}`);
+    if (filter.organizationId)
+      where.push(`d.organization_id = $${params.push(filter.organizationId)}`);
     return this.db.query(
       `SELECT ${DEVICE_COLUMNS} FROM devices d LEFT JOIN organizations o ON o.id = d.organization_id
         WHERE ${where.join(' AND ')} ORDER BY d.status, d.last_seen_at DESC NULLS LAST, d.registered_at DESC`,
@@ -197,8 +221,16 @@ export class DevicesService {
     const d = await this.getManageable(user, id);
     if (d.status === 'revoked') return;
     await this.db.tx(async (c) => {
-      await this.db.query(`UPDATE devices SET status = 'revoked', revoked_at = now(), revoked_by = $2 WHERE id = $1`, [d.id, user.userId], c);
-      await this.db.query('UPDATE device_credentials SET revoked_at = now() WHERE device_id = $1 AND revoked_at IS NULL', [d.id], c);
+      await this.db.query(
+        `UPDATE devices SET status = 'revoked', revoked_at = now(), revoked_by = $2 WHERE id = $1`,
+        [d.id, user.userId],
+        c,
+      );
+      await this.db.query(
+        'UPDATE device_credentials SET revoked_at = now() WHERE device_id = $1 AND revoked_at IS NULL',
+        [d.id],
+        c,
+      );
       await this.audit.record(
         {
           action: reason === 'reported_lost' ? 'device.reported_lost' : 'device.revoked',
@@ -216,7 +248,10 @@ export class DevicesService {
       organizationId: d.organization_id,
       deviceId: d.id,
       rule: reason === 'reported_lost' ? 'device_reported_lost' : 'device_revoked',
-      title: reason === 'reported_lost' ? `${d.name} was reported lost and its access revoked` : `${d.name} was revoked`,
+      title:
+        reason === 'reported_lost'
+          ? `${d.name} was reported lost and its access revoked`
+          : `${d.name} was revoked`,
       severity: reason === 'reported_lost' ? 'high' : 'info',
       confidence: 'confirmed',
       explanation: `Device credentials for ${d.name} were revoked. The device can no longer upload activity; history uploaded before ${new Date().toISOString()} is kept.`,
@@ -262,7 +297,9 @@ export class DevicesService {
       last_error?: string;
     },
   ) {
-    const before = await this.db.one<DeviceRow & { consecutive_sync_failures: number; monitoring_status: string }>(
+    const before = await this.db.one<
+      DeviceRow & { consecutive_sync_failures: number; monitoring_status: string }
+    >(
       'SELECT id, name, owner_user_id, organization_id, consecutive_sync_failures, monitoring_status FROM devices WHERE id = $1',
       [deviceId],
     );
@@ -272,7 +309,16 @@ export class DevicesService {
           agent_version = coalesce($5, agent_version), os_version = coalesce($6, os_version),
           consecutive_sync_failures = $7, last_sync_error = $8
         WHERE id = $1`,
-      [deviceId, hb.monitoring_status, JSON.stringify(hb.permissions), hb.startup_enabled, hb.agent_version ?? null, hb.os_version ?? null, hb.consecutive_upload_failures, hb.last_error ?? null],
+      [
+        deviceId,
+        hb.monitoring_status,
+        JSON.stringify(hb.permissions),
+        hb.startup_enabled,
+        hb.agent_version ?? null,
+        hb.os_version ?? null,
+        hb.consecutive_upload_failures,
+        hb.last_error ?? null,
+      ],
     );
     if (hb.consecutive_upload_failures >= 3 && before.consecutive_sync_failures < 3) {
       await this.alerts.create({
@@ -304,14 +350,26 @@ export class DevicesService {
   async rotateCredential(deviceId: string, credentialId: string) {
     const secret = randomToken('tvd');
     await this.db.tx(async (c) => {
-      await this.db.query('INSERT INTO device_credentials (device_id, secret_hash) VALUES ($1,$2)', [deviceId, sha256(secret)], c);
+      await this.db.query(
+        'INSERT INTO device_credentials (device_id, secret_hash) VALUES ($1,$2)',
+        [deviceId, sha256(secret)],
+        c,
+      );
       // Short overlap so an in-flight upload with the old secret still succeeds.
       await this.db.query(
         `UPDATE device_credentials SET expires_at = now() + interval '5 minutes' WHERE id = $1 AND (expires_at IS NULL OR expires_at > now() + interval '5 minutes')`,
         [credentialId],
         c,
       );
-      await this.audit.record({ action: 'device.credential_rotated', actorDeviceId: deviceId, targetType: 'device', targetId: deviceId }, c);
+      await this.audit.record(
+        {
+          action: 'device.credential_rotated',
+          actorDeviceId: deviceId,
+          targetType: 'device',
+          targetId: deviceId,
+        },
+        c,
+      );
     });
     return { device_secret: secret };
   }
@@ -333,6 +391,11 @@ export class DevicesService {
         ORDER BY occurred_at DESC LIMIT 1`,
       [device.id],
     );
-    return { device, last_known_state: lastStatus ?? null, recent_events: recent, open_alerts: openAlerts };
+    return {
+      device,
+      last_known_state: lastStatus ?? null,
+      recent_events: recent,
+      open_alerts: openAlerts,
+    };
   }
 }

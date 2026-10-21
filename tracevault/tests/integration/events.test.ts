@@ -1,4 +1,13 @@
-import { createUser, enrollDevice, event, Harness, startHarness, TestDevice, TestUser, upload } from './helpers';
+import {
+  createUser,
+  enrollDevice,
+  event,
+  Harness,
+  startHarness,
+  TestDevice,
+  TestUser,
+  upload,
+} from './helpers';
 
 let h: Harness;
 let user: TestUser;
@@ -13,13 +22,23 @@ afterAll(async () => h.close());
 
 describe('device enrollment', () => {
   it('registers a device with a hashed credential and raises a new-device alert', async () => {
-    const [cred] = await h.sql<{ secret_hash: Buffer }>('SELECT secret_hash FROM device_credentials WHERE device_id = $1', [device.id]);
+    const [cred] = await h.sql<{ secret_hash: Buffer }>(
+      'SELECT secret_hash FROM device_credentials WHERE device_id = $1',
+      [device.id],
+    );
     expect(cred.secret_hash.toString('utf8')).not.toContain(device.secret);
     const list = await user.get('/v1/devices').expect(200);
     expect(list.body.items).toHaveLength(1);
-    expect(list.body.items[0]).toMatchObject({ name: 'Work laptop', status: 'active', sync_status: 'never', owner_user_id: user.id });
+    expect(list.body.items[0]).toMatchObject({
+      name: 'Work laptop',
+      status: 'active',
+      sync_status: 'never',
+      owner_user_id: user.id,
+    });
     const alerts = await user.get('/v1/alerts').expect(200);
-    expect(alerts.body.items.map((a: { rule: string }) => a.rule)).toContain('new_device_registered');
+    expect(alerts.body.items.map((a: { rule: string }) => a.rule)).toContain(
+      'new_device_registered',
+    );
   });
 
   it('enrollment codes are single use', async () => {
@@ -39,7 +58,10 @@ describe('device enrollment', () => {
   });
 
   it('lets the owner rename a device', async () => {
-    const res = await user.patch(`/v1/devices/${device.id}`).send({ name: 'Renamed laptop' }).expect(200);
+    const res = await user
+      .patch(`/v1/devices/${device.id}`)
+      .send({ name: 'Renamed laptop' })
+      .expect(200);
     expect(res.body.name).toBe('Renamed laptop');
   });
 });
@@ -50,7 +72,10 @@ describe('batch ingestion', () => {
     const e2 = event({ event_type: 'user_login', metadata: { account_name: 'alice' } });
     const res = await upload(h, device, [e1, e2]).expect(200);
     expect(res.body).toMatchObject({ accepted: 2, duplicates: 0, rejected: [] });
-    const [row] = await h.sql<{ received_at: Date; owner_user_id: string }>('SELECT received_at, owner_user_id FROM activity_events WHERE event_id = $1', [e1.event_id]);
+    const [row] = await h.sql<{ received_at: Date; owner_user_id: string }>(
+      'SELECT received_at, owner_user_id FROM activity_events WHERE event_id = $1',
+      [e1.event_id],
+    );
     expect(row.owner_user_id).toBe(user.id);
     expect(Math.abs(row.received_at.getTime() - Date.now())).toBeLessThan(10_000);
     const d = await user.get(`/v1/devices/${device.id}`).expect(200);
@@ -63,7 +88,10 @@ describe('batch ingestion', () => {
     await upload(h, device, batch).expect(200);
     const again = await upload(h, device, batch).expect(200);
     expect(again.body).toMatchObject({ accepted: 0, duplicates: 2 });
-    const [n] = await h.sql<{ n: number }>('SELECT count(*)::int AS n FROM activity_events WHERE event_id = ANY($1::uuid[])', [batch.map((b) => b.event_id)]);
+    const [n] = await h.sql<{ n: number }>(
+      'SELECT count(*)::int AS n FROM activity_events WHERE event_id = ANY($1::uuid[])',
+      [batch.map((b) => b.event_id)],
+    );
     expect(n.n).toBe(2);
   });
 
@@ -84,19 +112,45 @@ describe('batch ingestion', () => {
 
   it('rejects oversized and malformed payloads', async () => {
     await upload(h, device, []).expect(400);
-    await upload(h, device, Array.from({ length: 501 }, () => event())).expect(400);
+    await upload(
+      h,
+      device,
+      Array.from({ length: 501 }, () => event()),
+    ).expect(400);
     const huge = { events: [event({ metadata: { a: 'x'.repeat(600_000) } })] };
-    await h.http().post('/v1/events/batch').set('Authorization', device.auth).send(huge).expect(413);
-    await h.http().post('/v1/events/batch').set('Authorization', device.auth).set('Content-Type', 'application/json').send('{"events": [').expect(400);
+    await h
+      .http()
+      .post('/v1/events/batch')
+      .set('Authorization', device.auth)
+      .send(huge)
+      .expect(413);
+    await h
+      .http()
+      .post('/v1/events/batch')
+      .set('Authorization', device.auth)
+      .set('Content-Type', 'application/json')
+      .send('{"events": [')
+      .expect(400);
   });
 
   it('requires a device credential, not a user session', async () => {
-    await user.post('/v1/events/batch').send({ events: [event()] }).expect(401);
-    await h.http().post('/v1/events/batch').set('Authorization', 'Device tvd_invalidinvalidinvalidinvalid').send({ events: [event()] }).expect(401);
+    await user
+      .post('/v1/events/batch')
+      .send({ events: [event()] })
+      .expect(401);
+    await h
+      .http()
+      .post('/v1/events/batch')
+      .set('Authorization', 'Device tvd_invalidinvalidinvalidinvalid')
+      .send({ events: [event()] })
+      .expect(401);
   });
 
   it('accepts events queued offline and marks them as delayed', async () => {
-    const offline = event({ event_type: 'screen_unlocked', occurred_at: new Date(Date.now() - 3 * 3600_000).toISOString() });
+    const offline = event({
+      event_type: 'screen_unlocked',
+      occurred_at: new Date(Date.now() - 3 * 3600_000).toISOString(),
+    });
     await upload(h, device, [offline]).expect(200);
     const res = await user.get('/v1/events').query({ event_type: 'screen_unlocked' }).expect(200);
     expect(res.body.items[0]).toMatchObject({ event_id: offline.event_id, delayed: true });
@@ -107,10 +161,16 @@ describe('batch ingestion', () => {
     const e = event({ event_type: 'screen_locked', occurred_at: '2026-10-21T08:30:00+01:00' });
     // occurred_at must be recent for the window check, so shift into range.
     const recent = new Date(Date.now() - 60_000);
-    const local = new Date(recent.getTime() + 60 * 60_000).toISOString().replace('Z', '+01:00').replace(/\.\d{3}/, '');
+    const local = new Date(recent.getTime() + 60 * 60_000)
+      .toISOString()
+      .replace('Z', '+01:00')
+      .replace(/\.\d{3}/, '');
     e.occurred_at = local;
     await upload(h, device, [e]).expect(200);
-    const [row] = await h.sql<{ occurred_at: Date }>('SELECT occurred_at FROM activity_events WHERE event_id = $1', [e.event_id]);
+    const [row] = await h.sql<{ occurred_at: Date }>(
+      'SELECT occurred_at FROM activity_events WHERE event_id = $1',
+      [e.event_id],
+    );
     expect(Math.abs(row.occurred_at.getTime() - recent.getTime())).toBeLessThan(1000);
   });
 });
@@ -119,8 +179,18 @@ describe('timeline search', () => {
   beforeAll(async () => {
     await upload(h, device, [
       event({ event_type: 'application_started', metadata: { application: 'Photoshop' } }),
-      event({ event_type: 'security_setting_changed', severity: 'medium', metadata: { setting: 'firewall', new_value: false } }),
-      ...Array.from({ length: 30 }, (_, i) => event({ event_type: 'file_modified', occurred_at: new Date(Date.now() - (i + 10) * 60_000).toISOString(), metadata: { path: `C:/docs/report-${i}.docx` } })),
+      event({
+        event_type: 'security_setting_changed',
+        severity: 'medium',
+        metadata: { setting: 'firewall', new_value: false },
+      }),
+      ...Array.from({ length: 30 }, (_, i) =>
+        event({
+          event_type: 'file_modified',
+          occurred_at: new Date(Date.now() - (i + 10) * 60_000).toISOString(),
+          metadata: { path: `C:/docs/report-${i}.docx` },
+        }),
+      ),
     ]).expect(200);
   });
 
@@ -131,13 +201,26 @@ describe('timeline search', () => {
   });
 
   it('filters by type, severity, device and date', async () => {
-    const byType = await user.get('/v1/events').query({ event_type: 'security_setting_changed,user_login' }).expect(200);
-    expect(new Set(byType.body.items.map((e: { event_type: string }) => e.event_type))).toEqual(new Set(['security_setting_changed', 'user_login']));
+    const byType = await user
+      .get('/v1/events')
+      .query({ event_type: 'security_setting_changed,user_login' })
+      .expect(200);
+    expect(new Set(byType.body.items.map((e: { event_type: string }) => e.event_type))).toEqual(
+      new Set(['security_setting_changed', 'user_login']),
+    );
     const bySeverity = await user.get('/v1/events').query({ min_severity: 'medium' }).expect(200);
-    expect(bySeverity.body.items.every((e: { severity: string }) => e.severity !== 'info')).toBe(true);
-    const byDevice = await user.get('/v1/events').query({ device_id: device.id, limit: 1 }).expect(200);
+    expect(bySeverity.body.items.every((e: { severity: string }) => e.severity !== 'info')).toBe(
+      true,
+    );
+    const byDevice = await user
+      .get('/v1/events')
+      .query({ device_id: device.id, limit: 1 })
+      .expect(200);
     expect(byDevice.body.items[0].device_id).toBe(device.id);
-    const future = await user.get('/v1/events').query({ from: new Date(Date.now() + 3600_000).toISOString() }).expect(200);
+    const future = await user
+      .get('/v1/events')
+      .query({ from: new Date(Date.now() + 3600_000).toISOString() })
+      .expect(200);
     expect(future.body.items).toHaveLength(0);
     await user.get('/v1/events').query({ event_type: 'drop_table' }).expect(400);
   });
@@ -147,7 +230,10 @@ describe('timeline search', () => {
     let cursor: string | undefined;
     let pages = 0;
     do {
-      const res = await user.get('/v1/events').query({ event_type: 'file_modified', limit: 7, ...(cursor ? { cursor } : {}) }).expect(200);
+      const res = await user
+        .get('/v1/events')
+        .query({ event_type: 'file_modified', limit: 7, ...(cursor ? { cursor } : {}) })
+        .expect(200);
       for (const e of res.body.items) {
         expect(seen.has(e.id)).toBe(false);
         seen.add(e.id);
@@ -160,7 +246,10 @@ describe('timeline search', () => {
   });
 
   it('returns event details with surrounding context', async () => {
-    const list = await user.get('/v1/events').query({ event_type: 'security_setting_changed' }).expect(200);
+    const list = await user
+      .get('/v1/events')
+      .query({ event_type: 'security_setting_changed' })
+      .expect(200);
     const res = await user.get(`/v1/events/${list.body.items[0].id}`).expect(200);
     expect(res.body.event.event_type).toBe('security_setting_changed');
     expect(res.body.context.before.length + res.body.context.after.length).toBeGreaterThan(0);
@@ -168,12 +257,20 @@ describe('timeline search', () => {
   });
 
   it('exports authorized records as CSV with formula injection neutralised', async () => {
-    await upload(h, device, [event({ metadata: { application: '=HYPERLINK("http://evil")' } })]).expect(200);
-    const res = await user.get('/v1/events/export').query({ format: 'csv', q: 'hyperlink' }).expect(200);
+    await upload(h, device, [
+      event({ metadata: { application: '=HYPERLINK("http://evil")' } }),
+    ]).expect(200);
+    const res = await user
+      .get('/v1/events/export')
+      .query({ format: 'csv', q: 'hyperlink' })
+      .expect(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);
     expect(res.text.split('\n')[0]).toContain('occurred_at');
     expect(res.text).not.toMatch(/,"=HYPERLINK/);
-    const audit = await h.sql(`SELECT 1 FROM audit_logs WHERE action = 'events.exported' AND actor_user_id = $1`, [user.id]);
+    const audit = await h.sql(
+      `SELECT 1 FROM audit_logs WHERE action = 'events.exported' AND actor_user_id = $1`,
+      [user.id],
+    );
     expect(audit.length).toBeGreaterThan(0);
   });
 
@@ -189,7 +286,17 @@ describe('timeline search', () => {
 describe('alert rules', () => {
   it('flags a burst of failed sign-ins as likely, not confirmed', async () => {
     const now = Date.now();
-    await upload(h, device, Array.from({ length: 5 }, (_, i) => event({ event_type: 'login_failed', severity: 'low', occurred_at: new Date(now - i * 30_000).toISOString() }))).expect(200);
+    await upload(
+      h,
+      device,
+      Array.from({ length: 5 }, (_, i) =>
+        event({
+          event_type: 'login_failed',
+          severity: 'low',
+          occurred_at: new Date(now - i * 30_000).toISOString(),
+        }),
+      ),
+    ).expect(200);
     const res = await user.get('/v1/alerts').query({ status: 'open' }).expect(200);
     const burst = res.body.items.find((a: { rule: string }) => a.rule === 'repeated_failed_logins');
     expect(burst).toMatchObject({ confidence: 'likely', severity: 'medium' });
@@ -198,7 +305,9 @@ describe('alert rules', () => {
   });
 
   it('flags new local accounts and resolves alerts with an audit trail', async () => {
-    await upload(h, device, [event({ event_type: 'local_account_created', metadata: { account_name: 'support$' } })]).expect(200);
+    await upload(h, device, [
+      event({ event_type: 'local_account_created', metadata: { account_name: 'support$' } }),
+    ]).expect(200);
     const res = await user.get('/v1/alerts').query({ severity: 'high' }).expect(200);
     const alert = res.body.items.find((a: { rule: string }) => a.rule === 'local_account_created');
     expect(alert.confidence).toBe('confirmed');
@@ -213,12 +322,20 @@ describe('alert rules', () => {
       .http()
       .post('/v1/devices/self/heartbeat')
       .set('Authorization', device.auth)
-      .send({ monitoring_status: 'active', permissions: { security_log: 'granted' }, queued_events: 40, consecutive_upload_failures: 4, last_error: 'network unreachable' })
+      .send({
+        monitoring_status: 'active',
+        permissions: { security_log: 'granted' },
+        queued_events: 40,
+        consecutive_upload_failures: 4,
+        last_error: 'network unreachable',
+      })
       .expect(200);
     const d = await user.get(`/v1/devices/${device.id}`).expect(200);
     expect(d.body.sync_status).toBe('failing');
     const alerts = await user.get('/v1/alerts').expect(200);
-    expect(alerts.body.items.map((a: { rule: string }) => a.rule)).toContain('repeated_upload_failures');
+    expect(alerts.body.items.map((a: { rule: string }) => a.rule)).toContain(
+      'repeated_upload_failures',
+    );
   });
 });
 
@@ -237,10 +354,17 @@ describe('revocation and recovery', () => {
 
   it('credential rotation issues a new secret and expires the old one', async () => {
     const d = await enrollDevice(h, user, { name: 'Rotating' });
-    const res = await h.http().post('/v1/devices/self/rotate-credential').set('Authorization', d.auth).expect(201);
+    const res = await h
+      .http()
+      .post('/v1/devices/self/rotate-credential')
+      .set('Authorization', d.auth)
+      .expect(201);
     const fresh = { ...d, auth: `Device ${res.body.device_secret}` };
     await upload(h, fresh, [event()]).expect(200);
-    await h.sql(`UPDATE device_credentials SET expires_at = now() - interval '1 second' WHERE device_id = $1 AND expires_at IS NOT NULL`, [d.id]);
+    await h.sql(
+      `UPDATE device_credentials SET expires_at = now() - interval '1 second' WHERE device_id = $1 AND expires_at IS NOT NULL`,
+      [d.id],
+    );
     await upload(h, d, [event()]).expect(401);
   });
 

@@ -57,7 +57,9 @@ export class LocalEncryptedStorage implements ObjectStorage {
     out.write(iv);
     try {
       await pipeline(body, meter, cipher, out, { end: false });
-      await new Promise<void>((res, rej) => out.end(cipher.getAuthTag(), (err?: Error | null) => (err ? rej(err) : res())));
+      await new Promise<void>((res, rej) =>
+        out.end(cipher.getAuthTag(), (err?: Error | null) => (err ? rej(err) : res())),
+      );
       await fs.rename(tmp, target);
     } catch (err) {
       out.destroy();
@@ -78,7 +80,8 @@ export class LocalEncryptedStorage implements ObjectStorage {
     await fh.close();
     const decipher = createDecipheriv('aes-256-gcm', this.key, iv);
     decipher.setAuthTag(tag);
-    if (size === 28) return Readable.from(Buffer.concat([decipher.update(Buffer.alloc(0)), decipher.final()]));
+    if (size === 28)
+      return Readable.from(Buffer.concat([decipher.update(Buffer.alloc(0)), decipher.final()]));
     return createReadStream(p, { start: 12, end: size - 17 }).pipe(decipher);
   }
 

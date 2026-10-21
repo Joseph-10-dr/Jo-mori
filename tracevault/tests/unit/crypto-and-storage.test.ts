@@ -3,8 +3,17 @@ import { mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { Readable } from 'stream';
-import { decrypt, encrypt, enrollmentCode, normalizeEnrollmentCode, randomToken } from '../../apps/api/src/common/crypto';
-import { LocalEncryptedStorage, ObjectTooLargeError } from '../../apps/api/src/recordings/object-storage';
+import {
+  decrypt,
+  encrypt,
+  enrollmentCode,
+  normalizeEnrollmentCode,
+  randomToken,
+} from '../../apps/api/src/common/crypto';
+import {
+  LocalEncryptedStorage,
+  ObjectTooLargeError,
+} from '../../apps/api/src/recordings/object-storage';
 import { resolveWindow } from '../../apps/api/src/summaries/summary.service';
 
 describe('crypto helpers', () => {
@@ -27,7 +36,10 @@ describe('crypto helpers', () => {
 });
 
 describe('LocalEncryptedStorage', () => {
-  const storage = new LocalEncryptedStorage(mkdtempSync(join(tmpdir(), 'tv-store-')), randomBytes(32));
+  const storage = new LocalEncryptedStorage(
+    mkdtempSync(join(tmpdir(), 'tv-store-')),
+    randomBytes(32),
+  );
 
   it('stores and retrieves bytes with size and hash', async () => {
     const data = randomBytes(100_000);
@@ -39,8 +51,12 @@ describe('LocalEncryptedStorage', () => {
   });
 
   it('rejects uploads over the size cap and path traversal keys', async () => {
-    await expect(storage.put('u1/big', Readable.from([randomBytes(2000)]), 1000)).rejects.toBeInstanceOf(ObjectTooLargeError);
-    await expect(storage.put('../escape', Readable.from([Buffer.from('x')]), 10)).rejects.toThrow(/invalid storage key/);
+    await expect(
+      storage.put('u1/big', Readable.from([randomBytes(2000)]), 1000),
+    ).rejects.toBeInstanceOf(ObjectTooLargeError);
+    await expect(storage.put('../escape', Readable.from([Buffer.from('x')]), 10)).rejects.toThrow(
+      /invalid storage key/,
+    );
   });
 });
 

@@ -9,7 +9,9 @@ import request from 'supertest';
 import { createApp } from '../../apps/api/src/bootstrap';
 import { AppConfig, loadConfig } from '../../apps/api/src/config';
 
-export const TEST_DB = process.env.TEST_DATABASE_URL || 'postgres://tracevault:tracevault@localhost:5432/tracevault_test';
+export const TEST_DB =
+  process.env.TEST_DATABASE_URL ||
+  'postgres://tracevault:tracevault@localhost:5432/tracevault_test';
 export const PASSWORD = 'correct-horse-battery-staple';
 
 export interface Harness {
@@ -21,7 +23,9 @@ export interface Harness {
 }
 
 /** Fresh schema per test file so suites are independent. */
-export async function startHarness(opts: { logger?: LoggerService; env?: Record<string, string> } = {}): Promise<Harness> {
+export async function startHarness(
+  opts: { logger?: LoggerService; env?: Record<string, string> } = {},
+): Promise<Harness> {
   const admin = new Client({ connectionString: TEST_DB });
   await admin.connect();
   await admin.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
@@ -74,10 +78,14 @@ export function tokenFrom(body: string | undefined): string {
   return m[1];
 }
 
-export async function createUser(h: Harness, opts: { verify?: boolean; email?: string } = {}): Promise<TestUser> {
+export async function createUser(
+  h: Harness,
+  opts: { verify?: boolean; email?: string } = {},
+): Promise<TestUser> {
   const email = opts.email ?? `user-${randomUUID().slice(0, 8)}@example.test`;
   const reg = await h.http().post('/v1/auth/register').send({ email, password: PASSWORD });
-  if (reg.status !== 201) throw new Error(`register failed: ${reg.status} ${JSON.stringify(reg.body)}`);
+  if (reg.status !== 201)
+    throw new Error(`register failed: ${reg.status} ${JSON.stringify(reg.body)}`);
   if (opts.verify !== false) {
     const token = tokenFrom(await latestEmail(h, email, 'Verify'));
     await h.http().post('/v1/auth/verify-email').send({ token }).expect(200);
@@ -103,15 +111,32 @@ export interface TestDevice {
   auth: string;
 }
 
-export async function enrollDevice(h: Harness, user: TestUser, opts: { organizationId?: string; name?: string; platform?: string } = {}): Promise<TestDevice> {
-  const code = await user.post('/v1/devices/enrollment-codes').send({ organization_id: opts.organizationId ?? null });
-  if (code.status !== 201) throw new Error(`enrollment code failed: ${code.status} ${JSON.stringify(code.body)}`);
+export async function enrollDevice(
+  h: Harness,
+  user: TestUser,
+  opts: { organizationId?: string; name?: string; platform?: string } = {},
+): Promise<TestDevice> {
+  const code = await user
+    .post('/v1/devices/enrollment-codes')
+    .send({ organization_id: opts.organizationId ?? null });
+  if (code.status !== 201)
+    throw new Error(`enrollment code failed: ${code.status} ${JSON.stringify(code.body)}`);
   const reg = await h
     .http()
     .post('/v1/devices/register')
-    .send({ enrollment_code: code.body.code, name: opts.name ?? 'Test laptop', platform: opts.platform ?? 'simulator', os_version: 'Test OS 1' });
-  if (reg.status !== 201) throw new Error(`register device failed: ${reg.status} ${JSON.stringify(reg.body)}`);
-  return { id: reg.body.device_id, secret: reg.body.device_secret, auth: `Device ${reg.body.device_secret}` };
+    .send({
+      enrollment_code: code.body.code,
+      name: opts.name ?? 'Test laptop',
+      platform: opts.platform ?? 'simulator',
+      os_version: 'Test OS 1',
+    });
+  if (reg.status !== 201)
+    throw new Error(`register device failed: ${reg.status} ${JSON.stringify(reg.body)}`);
+  return {
+    id: reg.body.device_id,
+    secret: reg.body.device_secret,
+    auth: `Device ${reg.body.device_secret}`,
+  };
 }
 
 export function event(over: Record<string, unknown> = {}) {
@@ -142,14 +167,26 @@ export async function enableMfa(user: TestUser) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const OTPAuth = require('otpauth');
   const setup = await user.post('/v1/auth/mfa/setup').expect(201);
-  const totp = new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(setup.body.secret), digits: 6, period: 30 });
+  const totp = new OTPAuth.TOTP({
+    secret: OTPAuth.Secret.fromBase32(setup.body.secret),
+    digits: 6,
+    period: 30,
+  });
   await user.post('/v1/auth/mfa/enable').send({ code: totp.generate() }).expect(200);
   return totp as { generate: () => string };
 }
 
-export async function inviteAndJoin(h: Harness, owner: TestUser, orgId: string, role: string): Promise<TestUser> {
+export async function inviteAndJoin(
+  h: Harness,
+  owner: TestUser,
+  orgId: string,
+  role: string,
+): Promise<TestUser> {
   const member = await createUser(h);
-  await owner.post(`/v1/organizations/${orgId}/invitations`).send({ email: member.email, role }).expect(201);
+  await owner
+    .post(`/v1/organizations/${orgId}/invitations`)
+    .send({ email: member.email, role })
+    .expect(201);
   const token = tokenFrom(await latestEmail(h, member.email, 'invited'));
   await member.post('/v1/invitations/accept').send({ token }).expect(200);
   return member;

@@ -13,12 +13,16 @@ type Query = Record<string, string | number | boolean | undefined | null>;
 
 export function qs(q: Query = {}): string {
   const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(q)) if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
+  for (const [k, v] of Object.entries(q))
+    if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
   const s = p.toString();
   return s ? `?${s}` : '';
 }
 
-export async function api<T = unknown>(path: string, init: { method?: string; body?: unknown; query?: Query } = {}): Promise<T> {
+export async function api<T = unknown>(
+  path: string,
+  init: { method?: string; body?: unknown; query?: Query } = {},
+): Promise<T> {
   const method = init.method ?? 'GET';
   const res = await fetch(`/api${path}${qs(init.query)}`, {
     method,
@@ -58,7 +62,8 @@ export async function download(path: string, query: Query, fallbackName: string,
   });
   if (!res.ok) throw new ApiError(res.status, `Export failed (${res.status})`);
   const blob = await res.blob();
-  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName;
+  const name =
+    /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName;
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -69,7 +74,8 @@ export async function download(path: string, query: Query, fallbackName: string,
 
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) {
-    if (err.details?.length) return `${err.message}: ${err.details.map((d) => `${d.path ? d.path + ' — ' : ''}${d.message}`).join('; ')}`;
+    if (err.details?.length)
+      return `${err.message}: ${err.details.map((d) => `${d.path ? d.path + ' — ' : ''}${d.message}`).join('; ')}`;
     return err.message;
   }
   return 'Something went wrong. Check your connection and try again.';

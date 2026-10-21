@@ -60,11 +60,22 @@ export class EventsService {
                   occurred_at timestamptz, metadata jsonb, schema_version smallint)
            ON CONFLICT (device_id, event_id) DO NOTHING
            RETURNING id, event_id`,
-          [device.deviceId, device.ownerUserId, device.organizationId, JSON.stringify(accepted), receivedAt],
+          [
+            device.deviceId,
+            device.ownerUserId,
+            device.organizationId,
+            JSON.stringify(accepted),
+            receivedAt,
+          ],
           c,
         );
       }
-      const d = await this.db.one<{ id: string; name: string; owner_user_id: string; organization_id: string | null }>(
+      const d = await this.db.one<{
+        id: string;
+        name: string;
+        owner_user_id: string;
+        organization_id: string | null;
+      }>(
         `UPDATE devices SET last_seen_at = now(), last_sync_at = now(), consecutive_sync_failures = 0, last_sync_error = NULL
           WHERE id = $1 RETURNING id, name, owner_user_id, organization_id`,
         [device.deviceId],
@@ -77,9 +88,13 @@ export class EventsService {
     });
     if (inserted.length) {
       const byEventId = new Map(inserted.map((r) => [r.event_id, r.id]));
-      const fresh = accepted.filter((e) => byEventId.has(e.event_id)).map((e) => ({ ...e, id: byEventId.get(e.event_id)! }));
+      const fresh = accepted
+        .filter((e) => byEventId.has(e.event_id))
+        .map((e) => ({ ...e, id: byEventId.get(e.event_id)! }));
       // Runs after commit so notifications never reference rolled-back rows.
-      await this.alerts.evaluate(dev, fresh).catch((err) => this.logger.error(`alert evaluation failed: ${(err as Error).message}`));
+      await this.alerts
+        .evaluate(dev, fresh)
+        .catch((err) => this.logger.error(`alert evaluation failed: ${(err as Error).message}`));
     }
     return {
       accepted: inserted.length,
@@ -97,16 +112,21 @@ export class EventsService {
     if (f.to) where.push(`e.occurred_at < $${params.push(f.to)}`);
     if (f.device_id) where.push(`e.device_id = $${params.push(f.device_id)}`);
     if (f.organization_id) where.push(`e.organization_id = $${params.push(f.organization_id)}`);
-    if (f.event_type?.length) where.push(`e.event_type = ANY($${params.push(f.event_type)}::text[])`);
+    if (f.event_type?.length)
+      where.push(`e.event_type = ANY($${params.push(f.event_type)}::text[])`);
     if (f.source) where.push(`e.source = $${params.push(f.source)}`);
     if (f.min_severity) {
-      const allowed = Object.keys(SEVERITY_RANK).filter((s) => SEVERITY_RANK[s] >= SEVERITY_RANK[f.min_severity!]);
+      const allowed = Object.keys(SEVERITY_RANK).filter(
+        (s) => SEVERITY_RANK[s] >= SEVERITY_RANK[f.min_severity!],
+      );
       where.push(`e.severity = ANY($${params.push(allowed)}::text[])`);
     }
     if (f.q) {
       const text = params.push(f.q);
       const like = params.push(f.q.replace(/[%_\\]/g, '\\$&'));
-      where.push(`(e.search_text @@ plainto_tsquery('simple', $${text}) OR d.name ILIKE '%' || $${like} || '%')`);
+      where.push(
+        `(e.search_text @@ plainto_tsquery('simple', $${text}) OR d.name ILIKE '%' || $${like} || '%')`,
+      );
     }
     return { where: where.join(' AND '), params };
   }
@@ -115,7 +135,8 @@ export class EventsService {
     const { where, params } = await this.buildWhere(user, f);
     const c = decodeCursor(f.cursor);
     let w = where;
-    if (c) w += ` AND (e.occurred_at, e.id) < ($${params.push(c.ts)}::timestamptz, $${params.push(c.id)}::uuid)`;
+    if (c)
+      w += ` AND (e.occurred_at, e.id) < ($${params.push(c.ts)}::timestamptz, $${params.push(c.id)}::uuid)`;
     const rows = await this.db.query<{ id: string; occurred_at: Date }>(
       `SELECT ${EVENT_COLUMNS} FROM activity_events e JOIN devices d ON d.id = e.device_id
         WHERE ${w} ORDER BY e.occurred_at DESC, e.id DESC LIMIT ${f.limit + 1}`,
@@ -125,7 +146,9 @@ export class EventsService {
     const items = rows.slice(0, f.limit);
     return {
       items,
-      next_cursor: more ? encodeCursor(items[items.length - 1].occurred_at, items[items.length - 1].id) : null,
+      next_cursor: more
+        ? encodeCursor(items[items.length - 1].occurred_at, items[items.length - 1].id)
+        : null,
       note: DELAY_NOTE,
     };
   }
@@ -149,9 +172,17 @@ export class EventsService {
           ORDER BY occurred_at, id LIMIT 5`,
         [e.device_id, e.occurred_at, e.id],
       ),
-      this.db.query(`SELECT id, title, severity, status FROM security_alerts WHERE $1 = ANY(evidence_event_ids)`, [e.id]),
+      this.db.query(
+        `SELECT id, title, severity, status FROM security_alerts WHERE $1 = ANY(evidence_event_ids)`,
+        [e.id],
+      ),
     ]);
-    return { event: e, context: { before: before.reverse(), after }, related_alerts: alerts, note: DELAY_NOTE };
+    return {
+      event: e,
+      context: { before: before.reverse(), after },
+      related_alerts: alerts,
+      note: DELAY_NOTE,
+    };
   }
 
   async stats(user: UserAuth, f: EventFilter, bucket: 'hour' | 'day') {

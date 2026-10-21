@@ -53,8 +53,9 @@ export default function Landing() {
         <section className="hero">
           <h1>Know what happened on your devices — even when they weren’t in your hands.</h1>
           <p>
-            Lent your laptop to a friend, a repair shop or a colleague? TraceVault keeps a secure, searchable record of the security
-            activity your devices report, so you can review it later from any trusted device.
+            Lent your laptop to a friend, a repair shop or a colleague? TraceVault keeps a secure,
+            searchable record of the security activity your devices report, so you can review it
+            later from any trusted device.
           </p>
           <div className="tv-row" style={{ marginTop: 20 }}>
             <Link className="tv-btn tv-btn--primary" href="/register">
@@ -88,8 +89,14 @@ export default function Landing() {
             </ul>
             <ul className="check-list">
               <li>It can’t see inside other apps, websites or messages.</li>
-              <li>It can’t record anything before it was installed, or events still queued on a device that was destroyed.</li>
-              <li>It can’t locate, lock or wipe devices — it links you to the official services that can.</li>
+              <li>
+                It can’t record anything before it was installed, or events still queued on a device
+                that was destroyed.
+              </li>
+              <li>
+                It can’t locate, lock or wipe devices — it links you to the official services that
+                can.
+              </li>
             </ul>
           </div>
         </section>

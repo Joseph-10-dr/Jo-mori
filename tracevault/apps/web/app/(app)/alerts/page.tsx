@@ -1,7 +1,15 @@
 'use client';
 
 import type { SecurityAlert } from '@tracevault/api-contracts';
-import { Button, Card, EmptyState, Field, Notice, SeverityBadge, Spinner } from '@tracevault/design-system';
+import {
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Notice,
+  SeverityBadge,
+  Spinner,
+} from '@tracevault/design-system';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
@@ -17,7 +25,10 @@ function AlertDetail({ id, onChanged }: { id: string; onChanged: () => void }) {
 
   async function resolve(status: 'resolved' | 'dismissed') {
     try {
-      await api(`/v1/alerts/${id}/resolve`, { method: 'POST', body: { status, note: note || undefined } });
+      await api(`/v1/alerts/${id}/resolve`, {
+        method: 'POST',
+        body: { status, note: note || undefined },
+      });
       setMsg(null);
       reload();
       onChanged();
@@ -40,7 +51,10 @@ function AlertDetail({ id, onChanged }: { id: string; onChanged: () => void }) {
       <h3>What was recorded</h3>
       <p>{data.explanation}</p>
       {data.confidence !== 'confirmed' && (
-        <Notice tone="warn">This alert is an inference from a pattern of events. It is not proof that your device or accounts were compromised.</Notice>
+        <Notice tone="warn">
+          This alert is an inference from a pattern of events. It is not proof that your device or
+          accounts were compromised.
+        </Notice>
       )}
       <h3>Recommended response</h3>
       <p>{data.recommended_action}</p>
@@ -67,7 +81,13 @@ function AlertDetail({ id, onChanged }: { id: string; onChanged: () => void }) {
         <>
           {msg && <Notice tone="error">{msg}</Notice>}
           <Field label="Resolution note (optional)" htmlFor="note">
-            <input className="tv-input" id="note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} />
+            <input
+              className="tv-input"
+              id="note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={1000}
+            />
           </Field>
           <div className="tv-row">
             <Button variant="primary" onClick={() => resolve('resolved')}>
@@ -92,7 +112,11 @@ function Alerts() {
   const [status, setStatus] = useState('open');
   const [severity, setSeverity] = useState('');
   const [cursor, setCursor] = useState<string | undefined>();
-  const list = useApi<{ items: SecurityAlert[]; next_cursor: string | null; open_by_severity: Record<string, number> }>('/v1/alerts', {
+  const list = useApi<{
+    items: SecurityAlert[];
+    next_cursor: string | null;
+    open_by_severity: Record<string, number>;
+  }>('/v1/alerts', {
     status: status || undefined,
     severity: severity || undefined,
     cursor,
@@ -102,12 +126,20 @@ function Alerts() {
 
   return (
     <>
-      <PageHead title="Security alerts" description="Rule-based alerts. Each shows its evidence and whether it is observed or inferred." />
+      <PageHead
+        title="Security alerts"
+        description="Rule-based alerts. Each shows its evidence and whether it is observed or inferred."
+      />
       <div className="tv-grid tv-grid--2" style={{ alignItems: 'start' }}>
         <Card>
           <div className="filters">
             <Field label="Status" htmlFor="status">
-              <select className="tv-select" id="status" value={status} onChange={(e) => (setCursor(undefined), setStatus(e.target.value))}>
+              <select
+                className="tv-select"
+                id="status"
+                value={status}
+                onChange={(e) => (setCursor(undefined), setStatus(e.target.value))}
+              >
                 <option value="open">Open</option>
                 <option value="resolved">Resolved</option>
                 <option value="dismissed">Dismissed</option>
@@ -115,7 +147,12 @@ function Alerts() {
               </select>
             </Field>
             <Field label="Severity" htmlFor="severity">
-              <select className="tv-select" id="severity" value={severity} onChange={(e) => (setCursor(undefined), setSeverity(e.target.value))}>
+              <select
+                className="tv-select"
+                id="severity"
+                value={severity}
+                onChange={(e) => (setCursor(undefined), setSeverity(e.target.value))}
+              >
                 <option value="">Any</option>
                 {['critical', 'high', 'medium', 'low', 'info'].map((s) => (
                   <option key={s} value={s}>
@@ -127,15 +164,24 @@ function Alerts() {
           </div>
           <ErrorNotice error={list.error} retry={list.reload} />
           {list.loading && <Spinner />}
-          {list.data && list.data.items.length === 0 && <EmptyState title="No alerts here">Nothing matches these filters.</EmptyState>}
+          {list.data && list.data.items.length === 0 && (
+            <EmptyState title="No alerts here">Nothing matches these filters.</EmptyState>
+          )}
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {list.data?.items.map((a) => (
-              <li key={a.id} style={{ borderBottom: '1px solid var(--tv-border)', padding: '10px 0' }}>
+              <li
+                key={a.id}
+                style={{ borderBottom: '1px solid var(--tv-border)', padding: '10px 0' }}
+              >
                 <div className="tv-row">
                   <SeverityBadge severity={a.severity} />
                   <ConfidenceBadge confidence={a.confidence} />
                 </div>
-                <Link href={`/alerts?id=${a.id}`} aria-current={selected === a.id ? 'true' : undefined} style={{ fontWeight: 600 }}>
+                <Link
+                  href={`/alerts?id=${a.id}`}
+                  aria-current={selected === a.id ? 'true' : undefined}
+                  style={{ fontWeight: 600 }}
+                >
                   {a.title}
                 </Link>
                 <div className="tv-small tv-muted">
@@ -161,7 +207,9 @@ function Alerts() {
           <AlertDetail id={selected} onChanged={list.reload} key={selected} />
         ) : (
           <Card>
-            <EmptyState title="Select an alert">Pick an alert to see its evidence and recommended response.</EmptyState>
+            <EmptyState title="Select an alert">
+              Pick an alert to see its evidence and recommended response.
+            </EmptyState>
             <p className="tv-small tv-muted">
               <Button size="sm" variant="ghost" onClick={() => router.push('/help#alerts')}>
                 How alerts work

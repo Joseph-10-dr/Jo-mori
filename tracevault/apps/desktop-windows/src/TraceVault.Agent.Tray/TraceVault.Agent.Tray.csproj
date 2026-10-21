@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Visible system-tray front end. Requires the Windows Desktop SDK, so it is
+    built only on Windows (see .github/workflows/ci.yml "windows-agent" job).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>TraceVault</AssemblyName>
+    <RootNamespace>TraceVault.Agent.Tray</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TraceVault.Agent.Windows\TraceVault.Agent.Windows.csproj" />
+  </ItemGroup>
+</Project>

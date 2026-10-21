@@ -29,7 +29,9 @@ export default function RecordingsPage() {
 
   async function open(id: string) {
     try {
-      const r = await api<{ download_url: string }>(`/v1/recordings/${id}/download-url`, { method: 'POST' });
+      const r = await api<{ download_url: string }>(`/v1/recordings/${id}/download-url`, {
+        method: 'POST',
+      });
       // Single-use link valid for 5 minutes; the browser downloads it directly from storage.
       window.location.assign(r.download_url);
     } catch (err) {
@@ -50,19 +52,35 @@ export default function RecordingsPage() {
 
   return (
     <>
-      <PageHead title="Recordings" description="Optional screen and audio recordings started by someone at the device." />
+      <PageHead
+        title="Recordings"
+        description="Optional screen and audio recordings started by someone at the device."
+      />
       <div className="stack">
         <Card title="How recording works">
           <ul className="check-list">
-            <li>Recording only starts when someone at the device presses Record and accepts the operating system’s permission prompt.</li>
-            <li>A visible indicator stays on while recording, with a Stop button. Recordings are never started from this dashboard.</li>
-            <li>Each recording stores a consent record. Files are encrypted, private, and deleted automatically when retention expires.</li>
+            <li>
+              Recording only starts when someone at the device presses Record and accepts the
+              operating system’s permission prompt.
+            </li>
+            <li>
+              A visible indicator stays on while recording, with a Stop button. Recordings are never
+              started from this dashboard.
+            </li>
+            <li>
+              Each recording stores a consent record. Files are encrypted, private, and deleted
+              automatically when retention expires.
+            </li>
             <li>Every download is logged in the audit log.</li>
           </ul>
-          {user?.plan === 'free' && <Notice tone="warn">Recordings aren’t included in the Free plan. See Plan &amp; usage.</Notice>}
+          {user?.plan === 'free' && (
+            <Notice tone="warn">
+              Recordings aren’t included in the Free plan. See Plan &amp; usage.
+            </Notice>
+          )}
           <Notice tone="warn">
-            The Windows agent in this release does not capture recordings yet; the upload pipeline is ready for when it does. See Help for
-            platform support.
+            The Windows agent in this release does not capture recordings yet; the upload pipeline
+            is ready for when it does. See Help for platform support.
           </Notice>
         </Card>
         <Card title="Your recordings">
@@ -94,7 +112,10 @@ export default function RecordingsPage() {
                       </td>
                       <td>{r.device_name}</td>
                       <td>
-                        {r.kind === 'screen' ? 'Screen' : 'Audio'} {r.status !== 'available' && <Badge tone="medium">{r.status.replace('_', ' ')}</Badge>}
+                        {r.kind === 'screen' ? 'Screen' : 'Audio'}{' '}
+                        {r.status !== 'available' && (
+                          <Badge tone="medium">{r.status.replace('_', ' ')}</Badge>
+                        )}
                       </td>
                       <td>{Math.round(r.duration_seconds / 60)} min</td>
                       <td>{bytes(r.size_bytes)}</td>
@@ -102,7 +123,11 @@ export default function RecordingsPage() {
                         <Time iso={r.expires_at} />
                       </td>
                       <td className="tv-row">
-                        <Button size="sm" disabled={r.status !== 'available'} onClick={() => open(r.id)}>
+                        <Button
+                          size="sm"
+                          disabled={r.status !== 'available'}
+                          onClick={() => open(r.id)}
+                        >
                           Download
                         </Button>
                         <Button size="sm" variant="danger" onClick={() => remove(r.id)}>

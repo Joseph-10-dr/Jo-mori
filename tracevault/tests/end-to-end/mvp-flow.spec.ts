@@ -12,16 +12,22 @@ const shots = resolve(ROOT, 'test-results/e2e-screens');
 
 async function latestLink(page: Page, email: string, subject: string) {
   const res = await page.request.get(`${API}/v1/dev/outbox`, { params: { to: email } });
-  const item = (await res.json()).items.find((m: { subject: string }) => m.subject.includes(subject));
+  const item = (await res.json()).items.find((m: { subject: string }) =>
+    m.subject.includes(subject),
+  );
   return /https?:\/\/[^/]+(\/\S+)/.exec(item.body)![1];
 }
 
 function simulate(args: string[]) {
   // Invoke tsx directly so the simulator's own exit code reaches the test.
-  return spawnSync(join(ROOT, 'apps/simulator/node_modules/.bin/tsx'), ['src/cli.ts', '--api', API, '--state', stateDir, ...args], {
-    cwd: join(ROOT, 'apps/simulator'),
-    encoding: 'utf8',
-  });
+  return spawnSync(
+    join(ROOT, 'apps/simulator/node_modules/.bin/tsx'),
+    ['src/cli.ts', '--api', API, '--state', stateDir, ...args],
+    {
+      cwd: join(ROOT, 'apps/simulator'),
+      encoding: 'utf8',
+    },
+  );
 }
 
 async function register(page: Page, email: string) {
@@ -38,7 +44,10 @@ async function register(page: Page, email: string) {
 
 test.describe.configure({ mode: 'serial' });
 
-test('register, enroll a simulated device, search activity, act on alerts, revoke', async ({ page, browser }) => {
+test('register, enroll a simulated device, search activity, act on alerts, revoke', async ({
+  page,
+  browser,
+}) => {
   const email = `e2e-${Date.now()}@example.test`;
   await register(page, email);
 
@@ -82,7 +91,9 @@ test('register, enroll a simulated device, search activity, act on alerts, revok
   // Alerts: inferred vs observed, then resolve
   await page.goto('/alerts');
   await page.getByRole('link', { name: /New local account on E2E laptop/ }).click();
-  const detail = page.locator('section.tv-card').filter({ has: page.getByRole('heading', { name: /New local account on E2E laptop/ }) });
+  const detail = page
+    .locator('section.tv-card')
+    .filter({ has: page.getByRole('heading', { name: /New local account on E2E laptop/ }) });
   await expect(detail.getByText('Observed')).toBeVisible();
   await page.getByLabel('Resolution note (optional)').fill('Checked with the borrower');
   await page.getByRole('button', { name: 'Mark resolved' }).click();
@@ -93,7 +104,9 @@ test('register, enroll a simulated device, search activity, act on alerts, revok
 
   // Grounded summary
   await page.goto('/investigate');
-  await page.getByRole('button', { name: 'Were there any unusual security events this week?' }).click();
+  await page
+    .getByRole('button', { name: 'Were there any unusual security events this week?' })
+    .click();
   await expect(page.getByText('Inference').first()).toBeVisible();
   await expect(page.getByText(/no data sent to any AI provider/)).toBeVisible();
   await page.screenshot({ path: `${shots}/investigate.png`, fullPage: true });
@@ -134,7 +147,9 @@ test('settings, data export and mobile layout render', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/dashboard');
   await expect(page.getByRole('button', { name: 'Menu' })).toBeVisible();
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  );
   expect(overflow).toBe(false);
   await page.screenshot({ path: `${shots}/mobile-dashboard.png`, fullPage: true });
 });

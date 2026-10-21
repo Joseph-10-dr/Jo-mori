@@ -166,7 +166,9 @@ export function validateEvents(
   raw.forEach((item, index) => {
     const parsed = deviceEventSchema.safeParse(item);
     const maybeId =
-      item && typeof item === 'object' && typeof (item as { event_id?: unknown }).event_id === 'string'
+      item &&
+      typeof item === 'object' &&
+      typeof (item as { event_id?: unknown }).event_id === 'string'
         ? ((item as { event_id: string }).event_id as string)
         : undefined;
     if (!parsed.success) {
@@ -184,7 +186,11 @@ export function validateEvents(
       return;
     }
     if (seen.has(parsed.data.event_id)) {
-      rejected.push({ index, event_id: parsed.data.event_id, reason: 'duplicate event_id within batch' });
+      rejected.push({
+        index,
+        event_id: parsed.data.event_id,
+        reason: 'duplicate event_id within batch',
+      });
       return;
     }
     seen.add(parsed.data.event_id);

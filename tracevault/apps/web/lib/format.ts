@@ -1,7 +1,10 @@
 import { EVENT_TYPES } from '@tracevault/event-schema';
 
 /** Local time with zone, e.g. "21 Oct 2026, 14:05 WAT". Full UTC goes in the title attribute. */
-export function formatTime(iso: string | null | undefined, opts: { seconds?: boolean } = {}): string {
+export function formatTime(
+  iso: string | null | undefined,
+  opts: { seconds?: boolean } = {},
+): string {
   if (!iso) return '—';
   const d = new Date(iso);
   return d.toLocaleString(undefined, {
@@ -16,7 +19,12 @@ export function formatTime(iso: string | null | undefined, opts: { seconds?: boo
 }
 
 export function utcTitle(iso: string | null | undefined): string | undefined {
-  return iso ? `${new Date(iso).toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')}` : undefined;
+  return iso
+    ? `${new Date(iso)
+        .toISOString()
+        .replace('T', ' ')
+        .replace(/\.\d+Z$/, ' UTC')}`
+    : undefined;
 }
 
 export function relativeTime(iso: string | null | undefined): string {

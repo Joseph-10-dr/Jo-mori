@@ -45,7 +45,10 @@ export class Uploader {
   private async post(path: string, body: unknown): Promise<Response> {
     return this.o.fetchImpl(`${this.o.apiUrl}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Device ${this.o.deviceSecret}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Device ${this.o.deviceSecret}`,
+      },
       body: JSON.stringify(body),
     });
   }
@@ -57,15 +60,18 @@ export class Uploader {
         const res = await this.post('/v1/events/batch', { events });
         if (res.ok) return (await res.json()) as BatchResult;
         if (res.status === 401) throw new PermanentError('device credential revoked or invalid');
-        if (res.status === 429) retryAfterMs = Number(res.headers.get('retry-after') ?? 0) * 1000 || undefined;
-        else if (res.status < 500) throw new PermanentError(`server rejected the batch (${res.status})`);
+        if (res.status === 429)
+          retryAfterMs = Number(res.headers.get('retry-after') ?? 0) * 1000 || undefined;
+        else if (res.status < 500)
+          throw new PermanentError(`server rejected the batch (${res.status})`);
         this.lastError = `HTTP ${res.status}`;
       } catch (err) {
         if (err instanceof PermanentError) throw err;
         this.lastError = (err as Error).message || 'network error';
       }
       if (attempt >= this.o.maxAttempts) throw new Error(this.lastError);
-      const backoff = retryAfterMs ?? this.o.baseDelayMs * 2 ** (attempt - 1) * (0.5 + Math.random());
+      const backoff =
+        retryAfterMs ?? this.o.baseDelayMs * 2 ** (attempt - 1) * (0.5 + Math.random());
       this.o.log(`upload failed (${this.lastError}); retrying in ${Math.round(backoff)}ms`);
       await this.o.sleep(backoff);
     }
@@ -82,7 +88,8 @@ export class Uploader {
         uploaded += r.accepted;
         duplicates += r.duplicates;
         rejected += r.rejected.length;
-        for (const rej of r.rejected) this.o.log(`server rejected event ${rej.event_id ?? `#${rej.index}`}: ${rej.reason}`);
+        for (const rej of r.rejected)
+          this.o.log(`server rejected event ${rej.event_id ?? `#${rej.index}`}: ${rej.reason}`);
         // Everything in the batch is now settled server-side.
         this.o.queue.ack(new Set(batch.map((e) => e.event_id)));
         this.consecutiveFailures = 0;
@@ -90,14 +97,20 @@ export class Uploader {
       } catch (err) {
         this.consecutiveFailures++;
         const message = (err as Error).message;
-        if (err instanceof PermanentError && /revoked/.test(message)) return { ok: false, reason: 'revoked', message };
+        if (err instanceof PermanentError && /revoked/.test(message))
+          return { ok: false, reason: 'revoked', message };
         return { ok: false, reason: err instanceof PermanentError ? 'server' : 'offline', message };
       }
     }
     return { ok: true, uploaded, duplicates, rejected };
   }
 
-  async heartbeat(extra: { monitoring_status: string; permissions: Record<string, string>; agent_version: string; os_version?: string }) {
+  async heartbeat(extra: {
+    monitoring_status: string;
+    permissions: Record<string, string>;
+    agent_version: string;
+    os_version?: string;
+  }) {
     try {
       await this.post('/v1/devices/self/heartbeat', {
         ...extra,

@@ -28,7 +28,9 @@ export class AuditService {
   async record(entry: AuditEntry, client?: Queryable): Promise<void> {
     const run = async (c: Queryable) => {
       await c.query('SELECT pg_advisory_xact_lock(727275)');
-      const prev = await c.query<{ row_hash: Buffer }>('SELECT row_hash FROM audit_logs ORDER BY id DESC LIMIT 1');
+      const prev = await c.query<{ row_hash: Buffer }>(
+        'SELECT row_hash FROM audit_logs ORDER BY id DESC LIMIT 1',
+      );
       const prevHash = prev.rows[0]?.row_hash ?? null;
       const occurredAt = new Date().toISOString();
       const body = AuditService.canonical(entry, occurredAt);
@@ -128,7 +130,10 @@ export class AuditService {
         .update(prev ?? Buffer.alloc(0))
         .update(body)
         .digest();
-      if (!expect.equals(r.row_hash) || !(prev ?? Buffer.alloc(0)).equals(r.prev_hash ?? Buffer.alloc(0))) {
+      if (
+        !expect.equals(r.row_hash) ||
+        !(prev ?? Buffer.alloc(0)).equals(r.prev_hash ?? Buffer.alloc(0))
+      ) {
         return { ok: false, checked: rows.length, brokenAt: r.id };
       }
       prev = r.row_hash;

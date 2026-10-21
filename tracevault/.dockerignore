@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.next
+**/bin
+**/obj
+var
+test-results
+.env
+.env.*
+**/*.tsbuildinfo

@@ -6,8 +6,18 @@ import { lentLaptop } from '../../apps/simulator/src/scenarios';
 import { Uploader } from '../../apps/simulator/src/uploader';
 import { validateEvents } from '@tracevault/event-schema';
 
-const tmpQueue = (cap?: number) => new OfflineQueue(join(mkdtempSync(join(tmpdir(), 'tvq-')), 'q.json'), cap);
-const ok = (accepted: number) => new Response(JSON.stringify({ accepted, duplicates: 0, rejected: [], received_at: new Date().toISOString() }), { status: 200 });
+const tmpQueue = (cap?: number) =>
+  new OfflineQueue(join(mkdtempSync(join(tmpdir(), 'tvq-')), 'q.json'), cap);
+const ok = (accepted: number) =>
+  new Response(
+    JSON.stringify({
+      accepted,
+      duplicates: 0,
+      rejected: [],
+      received_at: new Date().toISOString(),
+    }),
+    { status: 200 },
+  );
 
 describe('offline queue', () => {
   it('persists across restarts with owner-only permissions', () => {
@@ -47,7 +57,14 @@ describe('uploader', () => {
       if (!online) throw new TypeError('fetch failed');
       return ok(JSON.parse(String(init!.body)).events.length);
     }) as unknown as typeof fetch;
-    const u = new Uploader({ apiUrl: 'http://x', deviceSecret: 'tvd_x', queue: q, fetchImpl, sleep, maxAttempts: 3 });
+    const u = new Uploader({
+      apiUrl: 'http://x',
+      deviceSecret: 'tvd_x',
+      queue: q,
+      fetchImpl,
+      sleep,
+      maxAttempts: 3,
+    });
     const first = await u.sync();
     expect(first).toMatchObject({ ok: false, reason: 'offline' });
     expect(q.size).toBe(n);
@@ -63,10 +80,20 @@ describe('uploader', () => {
   it('retries 5xx and honours Retry-After on 429', async () => {
     const q = tmpQueue();
     q.push(...lentLaptop().slice(0, 3));
-    const responses = [new Response('', { status: 503 }), new Response('', { status: 429, headers: { 'retry-after': '7' } }), ok(3)];
+    const responses = [
+      new Response('', { status: 503 }),
+      new Response('', { status: 429, headers: { 'retry-after': '7' } }),
+      ok(3),
+    ];
     const fetchImpl = jest.fn(async () => responses.shift()!) as unknown as typeof fetch;
     const waits: number[] = [];
-    const u = new Uploader({ apiUrl: 'http://x', deviceSecret: 'tvd_x', queue: q, fetchImpl, sleep: async (ms) => void waits.push(ms) });
+    const u = new Uploader({
+      apiUrl: 'http://x',
+      deviceSecret: 'tvd_x',
+      queue: q,
+      fetchImpl,
+      sleep: async (ms) => void waits.push(ms),
+    });
     expect(await u.sync()).toMatchObject({ ok: true, uploaded: 3 });
     expect(waits[1]).toBe(7000);
   });
@@ -74,8 +101,16 @@ describe('uploader', () => {
   it('stops immediately when the device credential is revoked', async () => {
     const q = tmpQueue();
     q.push(...lentLaptop().slice(0, 2));
-    const fetchImpl = jest.fn(async () => new Response('', { status: 401 })) as unknown as typeof fetch;
-    const u = new Uploader({ apiUrl: 'http://x', deviceSecret: 'tvd_x', queue: q, fetchImpl, sleep });
+    const fetchImpl = jest.fn(
+      async () => new Response('', { status: 401 }),
+    ) as unknown as typeof fetch;
+    const u = new Uploader({
+      apiUrl: 'http://x',
+      deviceSecret: 'tvd_x',
+      queue: q,
+      fetchImpl,
+      sleep,
+    });
     expect(await u.sync()).toMatchObject({ ok: false, reason: 'revoked' });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(q.size).toBe(2);
@@ -90,7 +125,14 @@ describe('uploader', () => {
       sizes.push(n);
       return ok(n);
     }) as unknown as typeof fetch;
-    await new Uploader({ apiUrl: 'http://x', deviceSecret: 'tvd_x', queue: q, fetchImpl, sleep, batchSize: 7 }).sync();
+    await new Uploader({
+      apiUrl: 'http://x',
+      deviceSecret: 'tvd_x',
+      queue: q,
+      fetchImpl,
+      sleep,
+      batchSize: 7,
+    }).sync();
     expect(Math.max(...sizes)).toBe(7);
     expect(sizes.reduce((a, b) => a + b, 0)).toBe(lentLaptop().length * 2);
   });

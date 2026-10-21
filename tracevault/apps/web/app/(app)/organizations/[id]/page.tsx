@@ -23,7 +23,12 @@ interface Org {
   event_retention_days: number;
   recording_retention_days: number;
   audit_retention_days: number;
-  stats: { members: number; active_devices: number; reporting_devices: number; open_alerts: number };
+  stats: {
+    members: number;
+    active_devices: number;
+    reporting_devices: number;
+    open_alerts: number;
+  };
 }
 
 export default function OrgPage() {
@@ -72,7 +77,8 @@ export default function OrgPage() {
         title={data.name}
         description={
           <>
-            Your role: {data.role_label} · Plan: {data.plan} <Badge>{data.subscription_status}</Badge>
+            Your role: {data.role_label} · Plan: {data.plan}{' '}
+            <Badge>{data.subscription_status}</Badge>
           </>
         }
         actions={
@@ -94,7 +100,8 @@ export default function OrgPage() {
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
       {canPolicy && !user?.mfa_enabled && data.require_mfa_for_admins && (
         <Notice tone="warn">
-          This organization requires two-step verification for administrative changes. <Link href="/settings">Turn it on in Settings.</Link>
+          This organization requires two-step verification for administrative changes.{' '}
+          <Link href="/settings">Turn it on in Settings.</Link>
         </Notice>
       )}
       <div className="stack">
@@ -112,32 +119,75 @@ export default function OrgPage() {
         <div className="tv-grid tv-grid--2" style={{ alignItems: 'start' }}>
           <Card title="Policies">
             <label className="tv-row" style={{ marginBottom: 10 }}>
-              <input type="checkbox" checked={data.member_enrollment_allowed} disabled={!canPolicy} onChange={(e) => patch({ member_enrollment_allowed: e.target.checked })} />
+              <input
+                type="checkbox"
+                checked={data.member_enrollment_allowed}
+                disabled={!canPolicy}
+                onChange={(e) => patch({ member_enrollment_allowed: e.target.checked })}
+              />
               Standard members may enroll devices into the organization
             </label>
             <label className="tv-row" style={{ marginBottom: 10 }}>
-              <input type="checkbox" checked={data.require_mfa_for_admins} disabled={!isOwner} onChange={(e) => patch({ require_mfa_for_admins: e.target.checked })} />
+              <input
+                type="checkbox"
+                checked={data.require_mfa_for_admins}
+                disabled={!isOwner}
+                onChange={(e) => patch({ require_mfa_for_admins: e.target.checked })}
+              />
               Require two-step verification for administrative actions
             </label>
             <label className="tv-row" style={{ marginBottom: 6 }}>
-              <input type="checkbox" checked={data.recordings_allowed} disabled={!isOwner} onChange={(e) => patch({ recordings_allowed: e.target.checked })} />
+              <input
+                type="checkbox"
+                checked={data.recordings_allowed}
+                disabled={!isOwner}
+                onChange={(e) => patch({ recordings_allowed: e.target.checked })}
+              />
               Allow screen/audio recordings on organization devices
             </label>
             <p className="tv-small tv-muted">
-              Only enable recordings after telling staff, in writing, when and why recordings may be made. Recordings still require the
-              device user to start them and accept the system permission. Only the owner can view organization recordings.
+              Only enable recordings after telling staff, in writing, when and why recordings may be
+              made. Recordings still require the device user to start them and accept the system
+              permission. Only the owner can view organization recordings.
             </p>
           </Card>
           <Card title="Retention">
             <form onSubmit={saveRetention}>
               <Field label="Activity events (days)" htmlFor="events">
-                <input className="tv-input" id="events" name="events" type="number" min={1} max={730} defaultValue={data.event_retention_days} disabled={!canPolicy} />
+                <input
+                  className="tv-input"
+                  id="events"
+                  name="events"
+                  type="number"
+                  min={1}
+                  max={730}
+                  defaultValue={data.event_retention_days}
+                  disabled={!canPolicy}
+                />
               </Field>
               <Field label="Recordings (days)" htmlFor="recordings">
-                <input className="tv-input" id="recordings" name="recordings" type="number" min={1} max={730} defaultValue={data.recording_retention_days} disabled={!canPolicy} />
+                <input
+                  className="tv-input"
+                  id="recordings"
+                  name="recordings"
+                  type="number"
+                  min={1}
+                  max={730}
+                  defaultValue={data.recording_retention_days}
+                  disabled={!canPolicy}
+                />
               </Field>
               <Field label="Audit log (days)" htmlFor="audit">
-                <input className="tv-input" id="audit" name="audit" type="number" min={30} max={3650} defaultValue={data.audit_retention_days} disabled={!canPolicy} />
+                <input
+                  className="tv-input"
+                  id="audit"
+                  name="audit"
+                  type="number"
+                  min={30}
+                  max={3650}
+                  defaultValue={data.audit_retention_days}
+                  disabled={!canPolicy}
+                />
               </Field>
               {canPolicy && <Button type="submit">Save retention</Button>}
             </form>

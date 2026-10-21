@@ -1,4 +1,11 @@
-import { Controller, Get, Inject, NotFoundException, Query, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  NotFoundException,
+  Query,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { z } from 'zod';
@@ -24,7 +31,11 @@ export class HealthController {
     } catch {
       throw new ServiceUnavailableException({ message: 'database unavailable' });
     }
-    return { status: 'ok', version: process.env.npm_package_version ?? '0.1.0', time: new Date().toISOString() };
+    return {
+      status: 'ok',
+      version: process.env.npm_package_version ?? '0.1.0',
+      time: new Date().toISOString(),
+    };
   }
 
   /** Development only: read messages that would have been emailed. Disabled in production. */

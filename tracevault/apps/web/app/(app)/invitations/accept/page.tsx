@@ -15,7 +15,10 @@ function Accept() {
 
   async function accept() {
     try {
-      const r = await api<{ organization_id: string }>('/v1/invitations/accept', { method: 'POST', body: { token: params.get('token') ?? '' } });
+      const r = await api<{ organization_id: string }>('/v1/invitations/accept', {
+        method: 'POST',
+        body: { token: params.get('token') ?? '' },
+      });
       await refresh();
       router.replace(`/organizations/${r.organization_id}`);
     } catch (err) {
@@ -29,8 +32,9 @@ function Accept() {
       <Card>
         {error && <Notice tone="error">{error}</Notice>}
         <p>
-          You’re signed in as <strong>{user?.email}</strong>. Joining lets the organization’s administrators and analysts see devices you
-          enroll <em>into the organization</em>. They cannot see your personal devices or their history.
+          You’re signed in as <strong>{user?.email}</strong>. Joining lets the organization’s
+          administrators and analysts see devices you enroll <em>into the organization</em>. They
+          cannot see your personal devices or their history.
         </p>
         <Button variant="primary" onClick={accept}>
           Accept invitation

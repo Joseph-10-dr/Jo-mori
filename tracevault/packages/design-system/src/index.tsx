@@ -7,12 +7,33 @@ export function Button({
   size,
   className = '',
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'primary' | 'danger' | 'ghost'; size?: 'sm'; ref?: Ref<HTMLButtonElement> }) {
-  const cls = ['tv-btn', variant !== 'default' && `tv-btn--${variant}`, size && `tv-btn--${size}`, className].filter(Boolean).join(' ');
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'default' | 'primary' | 'danger' | 'ghost';
+  size?: 'sm';
+  ref?: Ref<HTMLButtonElement>;
+}) {
+  const cls = [
+    'tv-btn',
+    variant !== 'default' && `tv-btn--${variant}`,
+    size && `tv-btn--${size}`,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
   return <button className={cls} {...props} />;
 }
 
-export function Card({ title, actions, children, className = '' }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({
+  title,
+  actions,
+  children,
+  className = '',
+}: {
+  title?: ReactNode;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <section className={`tv-card ${className}`}>
       {(title || actions) && (
@@ -26,7 +47,15 @@ export function Card({ title, actions, children, className = '' }: { title?: Rea
   );
 }
 
-export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
+export function Stat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: ReactNode;
+}) {
   return (
     <div className="tv-card tv-stat">
       <span className="tv-stat__value">{value}</span>
@@ -36,20 +65,43 @@ export function Stat({ label, value, hint }: { label: string; value: ReactNode; 
   );
 }
 
-const SEVERITY_LABEL: Record<Severity, string> = { info: 'Info', low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' };
+const SEVERITY_LABEL: Record<Severity, string> = {
+  info: 'Info',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  critical: 'Critical',
+};
 
 /** Severity is conveyed by text as well as colour (WCAG 1.4.1). */
 export function SeverityBadge({ severity }: { severity: Severity }) {
-  return <span className={`tv-badge tv-badge--${severity}`}>{SEVERITY_LABEL[severity] ?? severity}</span>;
+  return (
+    <span className={`tv-badge tv-badge--${severity}`}>{SEVERITY_LABEL[severity] ?? severity}</span>
+  );
 }
 
-export function Badge({ tone, children }: { tone?: Severity | 'ok' | 'demo'; children: ReactNode }) {
+export function Badge({
+  tone,
+  children,
+}: {
+  tone?: Severity | 'ok' | 'demo';
+  children: ReactNode;
+}) {
   return <span className={`tv-badge${tone ? ` tv-badge--${tone}` : ''}`}>{children}</span>;
 }
 
-export function Notice({ tone = 'info', children }: { tone?: 'info' | 'error' | 'success' | 'warn'; children: ReactNode }) {
+export function Notice({
+  tone = 'info',
+  children,
+}: {
+  tone?: 'info' | 'error' | 'success' | 'warn';
+  children: ReactNode;
+}) {
   return (
-    <div className={`tv-alert${tone !== 'info' ? ` tv-alert--${tone}` : ''}`} role={tone === 'error' ? 'alert' : 'status'}>
+    <div
+      className={`tv-alert${tone !== 'info' ? ` tv-alert--${tone}` : ''}`}
+      role={tone === 'error' ? 'alert' : 'status'}
+    >
       {children}
     </div>
   );
@@ -73,7 +125,17 @@ export function Spinner({ label = 'Loading' }: { label?: string }) {
   );
 }
 
-export function Field({ label, hint, htmlFor, children }: { label: string; hint?: ReactNode; htmlFor: string; children: ReactNode }) {
+export function Field({
+  label,
+  hint,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  hint?: ReactNode;
+  htmlFor: string;
+  children: ReactNode;
+}) {
   return (
     <div className="tv-field">
       <label htmlFor={htmlFor}>{label}</label>

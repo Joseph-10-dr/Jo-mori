@@ -1,6 +1,14 @@
 'use client';
 
-import { Button, Card, EmptyState, Field, Notice, SeverityBadge, Spinner } from '@tracevault/design-system';
+import {
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Notice,
+  SeverityBadge,
+  Spinner,
+} from '@tracevault/design-system';
 import { EVENT_TYPES } from '@tracevault/event-schema';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
@@ -67,7 +75,9 @@ function Timeline() {
       setLoading(true);
       setError(null);
       try {
-        const page = await api<Page>('/v1/events', { query: { ...JSON.parse(key), limit: 50, cursor: after } });
+        const page = await api<Page>('/v1/events', {
+          query: { ...JSON.parse(key), limit: 50, cursor: after },
+        });
         setItems((prev) => (after ? [...prev, ...page.items] : page.items));
         setCursor(page.next_cursor);
       } catch (e) {
@@ -132,12 +142,29 @@ function Timeline() {
       />
       {exportError && <Notice tone="error">{exportError}</Notice>}
       <Card>
-        <form className="filters" onSubmit={apply} key={key} role="search" aria-label="Filter events">
+        <form
+          className="filters"
+          onSubmit={apply}
+          key={key}
+          role="search"
+          aria-label="Filter events"
+        >
           <Field label="Search" htmlFor="q">
-            <input className="tv-input" id="q" name="q" defaultValue={filters.q} placeholder="App, setting, account…" />
+            <input
+              className="tv-input"
+              id="q"
+              name="q"
+              defaultValue={filters.q}
+              placeholder="App, setting, account…"
+            />
           </Field>
           <Field label="Device" htmlFor="device">
-            <select className="tv-select" id="device" name="device" defaultValue={filters.device_id ?? ''}>
+            <select
+              className="tv-select"
+              id="device"
+              name="device"
+              defaultValue={filters.device_id ?? ''}
+            >
               <option value="">All devices</option>
               {devices.data?.items.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -147,7 +174,12 @@ function Timeline() {
             </select>
           </Field>
           <Field label="Event type" htmlFor="type">
-            <select className="tv-select" id="type" name="type" defaultValue={filters.event_type ?? ''}>
+            <select
+              className="tv-select"
+              id="type"
+              name="type"
+              defaultValue={filters.event_type ?? ''}
+            >
               <option value="">All types</option>
               {Object.entries(EVENT_TYPES).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -157,7 +189,12 @@ function Timeline() {
             </select>
           </Field>
           <Field label="Minimum severity" htmlFor="severity">
-            <select className="tv-select" id="severity" name="severity" defaultValue={filters.min_severity ?? ''}>
+            <select
+              className="tv-select"
+              id="severity"
+              name="severity"
+              defaultValue={filters.min_severity ?? ''}
+            >
               <option value="">Any</option>
               <option value="low">Low and above</option>
               <option value="medium">Medium and above</option>
@@ -165,10 +202,22 @@ function Timeline() {
             </select>
           </Field>
           <Field label="From" htmlFor="from">
-            <input className="tv-input" id="from" name="from" type="datetime-local" defaultValue={params.get('from') ?? ''} />
+            <input
+              className="tv-input"
+              id="from"
+              name="from"
+              type="datetime-local"
+              defaultValue={params.get('from') ?? ''}
+            />
           </Field>
           <Field label="To" htmlFor="to">
-            <input className="tv-input" id="to" name="to" type="datetime-local" defaultValue={params.get('to') ?? ''} />
+            <input
+              className="tv-input"
+              id="to"
+              name="to"
+              type="datetime-local"
+              defaultValue={params.get('to') ?? ''}
+            />
           </Field>
           <div className="tv-row">
             <Button variant="primary" type="submit">
@@ -182,7 +231,9 @@ function Timeline() {
         <ErrorNotice error={error} retry={() => load()} />
         {!loading && items.length === 0 && !error && (
           <EmptyState title="No events match">
-            {key === '{}' ? 'Events appear here after an enrolled device uploads them.' : 'Try widening the date range or clearing filters.'}
+            {key === '{}'
+              ? 'Events appear here after an enrolled device uploads them.'
+              : 'Try widening the date range or clearing filters.'}
           </EmptyState>
         )}
         {items.length > 0 && (
@@ -236,10 +287,18 @@ function Timeline() {
         <div className="tv-row" style={{ marginTop: 12 }}>
           {loading && <Spinner label="Loading events" />}
           {!loading && cursor && <Button onClick={() => load(cursor)}>Load older events</Button>}
-          {!loading && !cursor && items.length > 0 && <span className="tv-small tv-muted">End of results ({items.length} events)</span>}
+          {!loading && !cursor && items.length > 0 && (
+            <span className="tv-small tv-muted">End of results ({items.length} events)</span>
+          )}
         </div>
       </Card>
-      {selected && <EventDrawer id={selected} onClose={() => setParam({ event: null })} onSelect={(id) => setParam({ event: id })} />}
+      {selected && (
+        <EventDrawer
+          id={selected}
+          onClose={() => setParam({ event: null })}
+          onSelect={(id) => setParam({ event: id })}
+        />
+      )}
     </>
   );
 }

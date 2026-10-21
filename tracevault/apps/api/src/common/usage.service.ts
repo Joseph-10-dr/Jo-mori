@@ -20,7 +20,9 @@ export class UsageService {
 
   /** Usage is billed to the organization for business devices, otherwise to the user. */
   static scopeFor(ownerUserId: string, organizationId: string | null): BillingScope {
-    return organizationId ? { userId: null, organizationId } : { userId: ownerUserId, organizationId: null };
+    return organizationId
+      ? { userId: null, organizationId }
+      : { userId: ownerUserId, organizationId: null };
   }
 
   async add(scope: BillingScope, metric: UsageMetric, quantity: number, client?: Queryable) {

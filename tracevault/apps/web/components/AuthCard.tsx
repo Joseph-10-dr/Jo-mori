@@ -1,7 +1,17 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-export function AuthCard({ title, subtitle, children, footer }: { title: string; subtitle?: ReactNode; children: ReactNode; footer?: ReactNode }) {
+export function AuthCard({
+  title,
+  subtitle,
+  children,
+  footer,
+}: {
+  title: string;
+  subtitle?: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+}) {
   return (
     <div className="auth-wrap">
       <main id="main" className="auth-card">

@@ -55,11 +55,20 @@ export class RetentionService implements OnModuleInit, OnModuleDestroy {
     const expiredSql = `status IN ('available','failed','pending_upload') AND expires_at < $1`;
     const expiredIds = await this.recordings.deleteObjectsWhere(expiredSql, [now]);
     if (expiredIds.length) {
-      await this.db.query(`UPDATE recordings SET status = 'deleted', deleted_at = $2 WHERE id = ANY($1::uuid[])`, [expiredIds, now]);
+      await this.db.query(
+        `UPDATE recordings SET status = 'deleted', deleted_at = $2 WHERE id = ANY($1::uuid[])`,
+        [expiredIds, now],
+      );
     }
     // Abandoned uploads (no completion within a day) are removed too.
-    const stale = await this.recordings.deleteObjectsWhere(`status = 'pending_upload' AND created_at < $1::timestamptz - interval '1 day'`, [now]);
-    if (stale.length) await this.db.query(`UPDATE recordings SET status = 'failed' WHERE id = ANY($1::uuid[])`, [stale]);
+    const stale = await this.recordings.deleteObjectsWhere(
+      `status = 'pending_upload' AND created_at < $1::timestamptz - interval '1 day'`,
+      [now],
+    );
+    if (stale.length)
+      await this.db.query(`UPDATE recordings SET status = 'failed' WHERE id = ANY($1::uuid[])`, [
+        stale,
+      ]);
 
     const auditRows = await this.db.tx(async (c) => {
       await c.query(`SET LOCAL tracevault.allow_audit_purge = 'on'`);
@@ -72,11 +81,26 @@ export class RetentionService implements OnModuleInit, OnModuleDestroy {
       return r.rowCount ?? 0;
     });
 
-    const sessions = await this.db.query(`DELETE FROM user_sessions WHERE expires_at < $1 OR revoked_at < $1::timestamptz - interval '30 days' RETURNING id`, [now]);
-    const tokens = await this.db.query(`DELETE FROM email_tokens WHERE expires_at < $1::timestamptz - interval '1 day' RETURNING id`, [now]);
-    const outbox = await this.db.query(`DELETE FROM email_outbox WHERE created_at < $1::timestamptz - interval '7 days' RETURNING id`, [now]);
-    await this.db.query(`DELETE FROM storage_tickets WHERE expires_at < $1::timestamptz - interval '1 day'`, [now]);
-    await this.db.query(`DELETE FROM device_enrollment_codes WHERE expires_at < $1::timestamptz - interval '1 day'`, [now]);
+    const sessions = await this.db.query(
+      `DELETE FROM user_sessions WHERE expires_at < $1 OR revoked_at < $1::timestamptz - interval '30 days' RETURNING id`,
+      [now],
+    );
+    const tokens = await this.db.query(
+      `DELETE FROM email_tokens WHERE expires_at < $1::timestamptz - interval '1 day' RETURNING id`,
+      [now],
+    );
+    const outbox = await this.db.query(
+      `DELETE FROM email_outbox WHERE created_at < $1::timestamptz - interval '7 days' RETURNING id`,
+      [now],
+    );
+    await this.db.query(
+      `DELETE FROM storage_tickets WHERE expires_at < $1::timestamptz - interval '1 day'`,
+      [now],
+    );
+    await this.db.query(
+      `DELETE FROM device_enrollment_codes WHERE expires_at < $1::timestamptz - interval '1 day'`,
+      [now],
+    );
 
     const report: PurgeReport = {
       events: events.length,

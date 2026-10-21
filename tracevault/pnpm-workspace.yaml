@@ -7,3 +7,7 @@ onlyBuiltDependencies:
   - "@node-rs/argon2"
   - "sharp"
   - "esbuild"
+# Security patches for transitive dependencies flagged by `pnpm audit`.
+overrides:
+  postcss: 8.5.29
+  js-yaml: 5.4.3

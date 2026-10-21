@@ -1,6 +1,15 @@
 'use client';
 
-import { Badge, Button, Card, EmptyState, Field, Notice, SeverityBadge, Spinner } from '@tracevault/design-system';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Notice,
+  SeverityBadge,
+  Spinner,
+} from '@tracevault/design-system';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
@@ -59,7 +68,10 @@ export default function DevicePage() {
   async function rename(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
-      await api(`/v1/devices/${id}`, { method: 'PATCH', body: { name: new FormData(e.currentTarget).get('name') } });
+      await api(`/v1/devices/${id}`, {
+        method: 'PATCH',
+        body: { name: new FormData(e.currentTarget).get('name') },
+      });
       setRenaming(false);
       reload();
     } catch (err) {
@@ -95,7 +107,14 @@ export default function DevicePage() {
         <Card>
           <form onSubmit={rename} className="tv-row" style={{ alignItems: 'flex-end' }}>
             <Field label="Device name" htmlFor="name">
-              <input className="tv-input" id="name" name="name" defaultValue={d.name} maxLength={80} required />
+              <input
+                className="tv-input"
+                id="name"
+                name="name"
+                defaultValue={d.name}
+                maxLength={80}
+                required
+              />
             </Field>
             <Button variant="primary" type="submit" style={{ marginBottom: 14 }}>
               Save
@@ -107,11 +126,21 @@ export default function DevicePage() {
         <Card title="Status">
           <dl className="kv">
             <dt>Access</dt>
-            <dd>{active ? <Badge tone="ok">Active</Badge> : <Badge tone="high">Revoked <Time iso={d.revoked_at} /></Badge>}</dd>
+            <dd>
+              {active ? (
+                <Badge tone="ok">Active</Badge>
+              ) : (
+                <Badge tone="high">
+                  Revoked <Time iso={d.revoked_at} />
+                </Badge>
+              )}
+            </dd>
             <dt>Sync</dt>
             <dd>
               <SyncBadge status={d.sync_status} />
-              {d.last_sync_error && <div className="tv-small tv-muted">Last error: {d.last_sync_error}</div>}
+              {d.last_sync_error && (
+                <div className="tv-small tv-muted">Last error: {d.last_sync_error}</div>
+              )}
             </dd>
             <dt>Monitoring</dt>
             <dd>
@@ -129,7 +158,8 @@ export default function DevicePage() {
             <dd>
               {data.last_known_state ? (
                 <>
-                  {eventLabel(data.last_known_state.event_type)} at <Time iso={data.last_known_state.occurred_at} />
+                  {eventLabel(data.last_known_state.event_type)} at{' '}
+                  <Time iso={data.last_known_state.occurred_at} />
                 </>
               ) : (
                 '—'
@@ -150,7 +180,10 @@ export default function DevicePage() {
               <ul className="check-list">
                 {Object.entries(d.permissions).map(([k, v]) => (
                   <li key={k}>
-                    {k.replace(/_/g, ' ')}: <Badge tone={v === 'granted' ? 'ok' : v === 'denied' ? 'high' : undefined}>{v}</Badge>
+                    {k.replace(/_/g, ' ')}:{' '}
+                    <Badge tone={v === 'granted' ? 'ok' : v === 'denied' ? 'high' : undefined}>
+                      {v}
+                    </Badge>
                   </li>
                 ))}
               </ul>
@@ -164,12 +197,28 @@ export default function DevicePage() {
               <Button
                 variant="danger"
                 onClick={() =>
-                  act(`/v1/devices/${d.id}/report-lost`, 'POST', `Report ${d.name} as lost? Its credentials are revoked immediately; uploaded history is kept.`, 'Device reported lost and its access revoked.')
+                  act(
+                    `/v1/devices/${d.id}/report-lost`,
+                    'POST',
+                    `Report ${d.name} as lost? Its credentials are revoked immediately; uploaded history is kept.`,
+                    'Device reported lost and its access revoked.',
+                  )
                 }
               >
                 Report lost & revoke access
               </Button>
-              <Button onClick={() => act(`/v1/devices/${d.id}/revoke`, 'POST', `Revoke ${d.name}? It will stop uploading until re-enrolled.`, 'Device revoked.')}>Revoke only</Button>
+              <Button
+                onClick={() =>
+                  act(
+                    `/v1/devices/${d.id}/revoke`,
+                    'POST',
+                    `Revoke ${d.name}? It will stop uploading until re-enrolled.`,
+                    'Device revoked.',
+                  )
+                }
+              >
+                Revoke only
+              </Button>
             </div>
           )}
           <h3>Official services</h3>
@@ -193,20 +242,27 @@ export default function DevicePage() {
             <ul>
               {data.open_alerts.map((a) => (
                 <li key={a.id}>
-                  <SeverityBadge severity={a.severity} /> <Link href={`/alerts?id=${a.id}`}>{a.title}</Link>
+                  <SeverityBadge severity={a.severity} />{' '}
+                  <Link href={`/alerts?id=${a.id}`}>{a.title}</Link>
                 </li>
               ))}
             </ul>
           )}
         </Card>
-        <Card title="Last uploaded activity" actions={<Link href={`/timeline?device=${d.id}`}>All</Link>}>
+        <Card
+          title="Last uploaded activity"
+          actions={<Link href={`/timeline?device=${d.id}`}>All</Link>}
+        >
           {data.recent_events.length === 0 ? (
             <EmptyState title="Nothing uploaded yet" />
           ) : (
             <ol style={{ paddingLeft: 18, margin: 0 }}>
               {data.recent_events.slice(0, 10).map((e) => (
                 <li key={e.id}>
-                  <Link href={`/timeline?event=${e.id}`}>{eventLabel(e.event_type)}</Link> <span className="tv-small tv-muted"><Time iso={e.occurred_at} /></span>
+                  <Link href={`/timeline?event=${e.id}`}>{eventLabel(e.event_type)}</Link>{' '}
+                  <span className="tv-small tv-muted">
+                    <Time iso={e.occurred_at} />
+                  </span>
                 </li>
               ))}
             </ol>
@@ -215,8 +271,21 @@ export default function DevicePage() {
       </div>
       <div style={{ marginTop: 16 }}>
         <Card title="Remove device">
-          <p className="tv-muted">Deleting removes the device and all of its uploaded history and recordings. This cannot be undone.</p>
-          <Button variant="danger" onClick={() => act(`/v1/devices/${d.id}`, 'DELETE', `Permanently delete ${d.name} and its history?`, 'Deleted')}>
+          <p className="tv-muted">
+            Deleting removes the device and all of its uploaded history and recordings. This cannot
+            be undone.
+          </p>
+          <Button
+            variant="danger"
+            onClick={() =>
+              act(
+                `/v1/devices/${d.id}`,
+                'DELETE',
+                `Permanently delete ${d.name} and its history?`,
+                'Deleted',
+              )
+            }
+          >
             Delete device and history
           </Button>
         </Card>

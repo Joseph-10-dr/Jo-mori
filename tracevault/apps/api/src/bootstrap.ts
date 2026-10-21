@@ -12,7 +12,10 @@ import { requestLogger } from './common/request-logger';
 import { AppConfig } from './config';
 import { migrate } from './db/migrate';
 
-export async function createApp(config: AppConfig, opts: { logger?: LoggerService | false } = {}): Promise<INestApplication> {
+export async function createApp(
+  config: AppConfig,
+  opts: { logger?: LoggerService | false } = {},
+): Promise<INestApplication> {
   await migrate(config.databaseUrl);
   const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(config), {
     bodyParser: false,
@@ -38,6 +41,8 @@ export async function createApp(config: AppConfig, opts: { logger?: LoggerServic
     .setVersion('1')
     .addBearerAuth()
     .build();
-  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, doc), { jsonDocumentUrl: 'docs/openapi.json' });
+  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, doc), {
+    jsonDocumentUrl: 'docs/openapi.json',
+  });
   return app;
 }

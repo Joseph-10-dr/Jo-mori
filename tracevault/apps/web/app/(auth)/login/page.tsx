@@ -49,14 +49,30 @@ function LoginForm() {
         </>
       }
     >
-      {params.get('reset') && <Notice tone="success">Password changed. Sign in with your new password.</Notice>}
+      {params.get('reset') && (
+        <Notice tone="success">Password changed. Sign in with your new password.</Notice>
+      )}
       {error && <Notice tone="error">{error}</Notice>}
       <form onSubmit={submit} noValidate={false}>
         <Field label="Email" htmlFor="email">
-          <input className="tv-input" id="email" name="email" type="email" autoComplete="email" required />
+          <input
+            className="tv-input"
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+          />
         </Field>
         <Field label="Password" htmlFor="password">
-          <input className="tv-input" id="password" name="password" type="password" autoComplete="current-password" required />
+          <input
+            className="tv-input"
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
         </Field>
         <div className="tv-row" style={{ justifyContent: 'space-between' }}>
           <Button variant="primary" type="submit" disabled={busy}>

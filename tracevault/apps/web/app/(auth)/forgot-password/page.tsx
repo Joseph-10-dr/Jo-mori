@@ -13,7 +13,10 @@ export default function ForgotPasswordPage() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
-      await api('/v1/auth/password/forgot', { method: 'POST', body: { email: new FormData(e.currentTarget).get('email') } });
+      await api('/v1/auth/password/forgot', {
+        method: 'POST',
+        body: { email: new FormData(e.currentTarget).get('email') },
+      });
       setSent(true);
     } catch (err) {
       setError(errorMessage(err));
@@ -23,12 +26,21 @@ export default function ForgotPasswordPage() {
   return (
     <AuthCard title="Reset your password" footer={<Link href="/login">Back to sign in</Link>}>
       {sent ? (
-        <Notice tone="success">If an account exists for that email, we’ve sent a reset link. It expires in 30 minutes.</Notice>
+        <Notice tone="success">
+          If an account exists for that email, we’ve sent a reset link. It expires in 30 minutes.
+        </Notice>
       ) : (
         <form onSubmit={submit}>
           {error && <Notice tone="error">{error}</Notice>}
           <Field label="Email" htmlFor="email">
-            <input className="tv-input" id="email" name="email" type="email" autoComplete="email" required />
+            <input
+              className="tv-input"
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+            />
           </Field>
           <Button variant="primary" type="submit">
             Send reset link

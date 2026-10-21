@@ -14,9 +14,13 @@ export async function migrate(databaseUrl: string, log: (m: string) => void = ()
     // Serialise concurrent migrators (e.g. two API instances starting together).
     await client.query('SELECT pg_advisory_lock(727274)');
     const done = new Set(
-      (await client.query<{ name: string }>('SELECT name FROM schema_migrations')).rows.map((r) => r.name),
+      (await client.query<{ name: string }>('SELECT name FROM schema_migrations')).rows.map(
+        (r) => r.name,
+      ),
     );
-    const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+    const files = readdirSync(MIGRATIONS_DIR)
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
     for (const file of files) {
       if (done.has(file)) continue;
       const sql = readFileSync(resolve(MIGRATIONS_DIR, file), 'utf8');

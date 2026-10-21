@@ -35,7 +35,10 @@ function Verify() {
       {state === 'done' && (
         <>
           <Notice tone="success">Your email address is confirmed.</Notice>
-          <Link className="tv-btn tv-btn--primary" href={session.status === 'signed-in' ? '/onboarding' : '/login'}>
+          <Link
+            className="tv-btn tv-btn--primary"
+            href={session.status === 'signed-in' ? '/onboarding' : '/login'}
+          >
             Continue
           </Link>
         </>

@@ -51,7 +51,11 @@ export class AuthService {
         [input.email, passwordHash, input.displayName ?? null, input.accountType],
         c,
       );
-      await this.db.query(`INSERT INTO subscriptions (user_id, plan) VALUES ($1, 'free')`, [u!.id], c);
+      await this.db.query(
+        `INSERT INTO subscriptions (user_id, plan) VALUES ($1, 'free')`,
+        [u!.id],
+        c,
+      );
       await this.db.query(
         `INSERT INTO retention_policies (user_id, event_retention_days, recording_retention_days) VALUES ($1, 14, 7)`,
         [u!.id],
@@ -62,7 +66,10 @@ export class AuthService {
         [u!.id],
         c,
       );
-      await this.audit.record({ action: 'account.registered', actorUserId: u!.id, subjectUserId: u!.id, ip: input.ip }, c);
+      await this.audit.record(
+        { action: 'account.registered', actorUserId: u!.id, subjectUserId: u!.id, ip: input.ip },
+        c,
+      );
       return u!;
     });
     await this.sendVerification(user.id, input.email);
@@ -78,7 +85,11 @@ export class AuthService {
     });
   }
 
-  private async issueEmailToken(userId: string, purpose: 'verify_email' | 'reset_password', minutes: number) {
+  private async issueEmailToken(
+    userId: string,
+    purpose: 'verify_email' | 'reset_password',
+    minutes: number,
+  ) {
     const token = randomToken('tve');
     // Only one live token per purpose.
     await this.db.query(
@@ -105,27 +116,42 @@ export class AuthService {
 
   async verifyEmail(token: string) {
     const userId = await this.consumeEmailToken(token, 'verify_email');
-    await this.db.query('UPDATE users SET email_verified_at = coalesce(email_verified_at, now()) WHERE id = $1', [userId]);
-    await this.audit.record({ action: 'account.email_verified', actorUserId: userId, subjectUserId: userId });
+    await this.db.query(
+      'UPDATE users SET email_verified_at = coalesce(email_verified_at, now()) WHERE id = $1',
+      [userId],
+    );
+    await this.audit.record({
+      action: 'account.email_verified',
+      actorUserId: userId,
+      subjectUserId: userId,
+    });
   }
 
-  async login(input: { email: string; password: string; userAgent?: string; ip: string | null }): Promise<SessionResult> {
+  async login(input: {
+    email: string;
+    password: string;
+    userAgent?: string;
+    ip: string | null;
+  }): Promise<SessionResult> {
     const user = await this.db.one<{
       id: string;
       email: string;
       password_hash: string;
       mfa_enabled_at: Date | null;
       locked_until: Date | null;
-    }>('SELECT id, email, password_hash, mfa_enabled_at, locked_until FROM users WHERE email = $1 AND deleted_at IS NULL', [
-      input.email,
-    ]);
+    }>(
+      'SELECT id, email, password_hash, mfa_enabled_at, locked_until FROM users WHERE email = $1 AND deleted_at IS NULL',
+      [input.email],
+    );
     if (!user) {
       dummyHash ??= hash('not-a-real-password', ARGON);
       await verify(await dummyHash, input.password).catch(() => false);
       throw new UnauthorizedException('Email or password is incorrect');
     }
     if (user.locked_until && user.locked_until > new Date()) {
-      throw new UnauthorizedException('Too many failed attempts. Try again later or reset your password.');
+      throw new UnauthorizedException(
+        'Too many failed attempts. Try again later or reset your password.',
+      );
     }
     const ok = await verify(user.password_hash, input.password).catch(() => false);
     if (!ok) {
@@ -135,21 +161,43 @@ export class AuthService {
          WHERE id = $1`,
         [user.id, MAX_FAILED_LOGINS, String(LOCK_MINUTES)],
       );
-      await this.audit.record({ action: 'auth.login_failed', subjectUserId: user.id, ip: input.ip });
+      await this.audit.record({
+        action: 'auth.login_failed',
+        subjectUserId: user.id,
+        ip: input.ip,
+      });
       throw new UnauthorizedException('Email or password is incorrect');
     }
-    await this.db.query('UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = $1', [user.id]);
+    await this.db.query(
+      'UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = $1',
+      [user.id],
+    );
     const knownAgent = await this.db.one(
       'SELECT 1 FROM user_sessions WHERE user_id = $1 AND user_agent IS NOT DISTINCT FROM $2 LIMIT 1',
       [user.id, input.userAgent ?? null],
     );
-    const session = await this.createSession(user.id, !user.mfa_enabled_at, input.userAgent, input.ip);
-    await this.audit.record({ action: 'auth.login', actorUserId: user.id, subjectUserId: user.id, ip: input.ip });
+    const session = await this.createSession(
+      user.id,
+      !user.mfa_enabled_at,
+      input.userAgent,
+      input.ip,
+    );
+    await this.audit.record({
+      action: 'auth.login',
+      actorUserId: user.id,
+      subjectUserId: user.id,
+      ip: input.ip,
+    });
     if (!knownAgent) await this.notifyNewSignIn(user.id, user.email, input.userAgent, input.ip);
     return { ...session, mfaRequired: !!user.mfa_enabled_at };
   }
 
-  private async notifyNewSignIn(userId: string, email: string, agent: string | undefined, ip: string | null) {
+  private async notifyNewSignIn(
+    userId: string,
+    email: string,
+    agent: string | undefined,
+    ip: string | null,
+  ) {
     const pref = await this.db.one<{ enabled: boolean; login_alerts: boolean }>(
       `SELECT enabled, login_alerts FROM notification_preferences WHERE user_id = $1 AND channel = 'email'`,
       [userId],
@@ -162,7 +210,12 @@ export class AuthService {
     });
   }
 
-  private async createSession(userId: string, mfaPassed: boolean, userAgent: string | undefined, ip: string | null) {
+  private async createSession(
+    userId: string,
+    mfaPassed: boolean,
+    userAgent: string | undefined,
+    ip: string | null,
+  ) {
     const token = randomToken('tvs');
     const expiresAt = new Date(Date.now() + this.config.sessionTtlHours * 3600_000);
     await this.db.query(
@@ -195,20 +248,36 @@ export class AuthService {
     const userId = await this.consumeEmailToken(token, 'reset_password');
     // Completing an emailed reset also proves control of the address.
     await this.setPassword(userId, password, undefined, true);
-    await this.audit.record({ action: 'auth.password_reset', actorUserId: userId, subjectUserId: userId });
+    await this.audit.record({
+      action: 'auth.password_reset',
+      actorUserId: userId,
+      subjectUserId: userId,
+    });
   }
 
   async changePassword(userId: string, current: string, next: string, keepSessionId: string) {
-    const u = await this.db.one<{ password_hash: string }>('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    const u = await this.db.one<{ password_hash: string }>(
+      'SELECT password_hash FROM users WHERE id = $1',
+      [userId],
+    );
     if (!u || !(await verify(u.password_hash, current).catch(() => false))) {
       throw new UnauthorizedException('Current password is incorrect');
     }
     await this.setPassword(userId, next, keepSessionId);
-    await this.audit.record({ action: 'auth.password_changed', actorUserId: userId, subjectUserId: userId });
+    await this.audit.record({
+      action: 'auth.password_changed',
+      actorUserId: userId,
+      subjectUserId: userId,
+    });
   }
 
   /** Changing the password revokes every other session. */
-  private async setPassword(userId: string, password: string, keepSessionId?: string, markVerified = false) {
+  private async setPassword(
+    userId: string,
+    password: string,
+    keepSessionId?: string,
+    markVerified = false,
+  ) {
     await this.db.query(
       `UPDATE users SET password_hash = $2, failed_login_count = 0, locked_until = NULL,
          email_verified_at = CASE WHEN $3 THEN coalesce(email_verified_at, now()) ELSE email_verified_at END
@@ -223,30 +292,55 @@ export class AuthService {
 
   // ---- MFA (TOTP, RFC 6238) ----
   private totp(secret: OTPAuth.Secret, email: string) {
-    return new OTPAuth.TOTP({ issuer: 'TraceVault', label: email, algorithm: 'SHA1', digits: 6, period: 30, secret });
+    return new OTPAuth.TOTP({
+      issuer: 'TraceVault',
+      label: email,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
   }
 
   async mfaSetup(userId: string, email: string) {
-    const u = await this.db.one<{ mfa_enabled_at: Date | null }>('SELECT mfa_enabled_at FROM users WHERE id = $1', [userId]);
-    if (u?.mfa_enabled_at) throw new ConflictException('Multifactor authentication is already enabled');
+    const u = await this.db.one<{ mfa_enabled_at: Date | null }>(
+      'SELECT mfa_enabled_at FROM users WHERE id = $1',
+      [userId],
+    );
+    if (u?.mfa_enabled_at)
+      throw new ConflictException('Multifactor authentication is already enabled');
     const secret = new OTPAuth.Secret({ size: 20 });
-    await this.db.query('UPDATE users SET mfa_secret_enc = $2 WHERE id = $1', [userId, encrypt(this.config.dataKey, secret.base32)]);
+    await this.db.query('UPDATE users SET mfa_secret_enc = $2 WHERE id = $1', [
+      userId,
+      encrypt(this.config.dataKey, secret.base32),
+    ]);
     return { otpauth_url: this.totp(secret, email).toString(), secret: secret.base32 };
   }
 
   private async checkCode(userId: string, email: string, code: string): Promise<boolean> {
-    const u = await this.db.one<{ mfa_secret_enc: string | null }>('SELECT mfa_secret_enc FROM users WHERE id = $1', [userId]);
+    const u = await this.db.one<{ mfa_secret_enc: string | null }>(
+      'SELECT mfa_secret_enc FROM users WHERE id = $1',
+      [userId],
+    );
     if (!u?.mfa_secret_enc) return false;
     const secret = OTPAuth.Secret.fromBase32(decrypt(this.config.dataKey, u.mfa_secret_enc));
     return this.totp(secret, email).validate({ token: code, window: 1 }) !== null;
   }
 
   async mfaEnable(userId: string, email: string, code: string, sessionId: string) {
-    if (!(await this.checkCode(userId, email, code))) throw new BadRequestException('Code is incorrect');
+    if (!(await this.checkCode(userId, email, code)))
+      throw new BadRequestException('Code is incorrect');
     await this.db.query('UPDATE users SET mfa_enabled_at = now() WHERE id = $1', [userId]);
     // Current session is considered verified; all others must re-verify.
-    await this.db.query('UPDATE user_sessions SET mfa_passed = (id = $2) WHERE user_id = $1', [userId, sessionId]);
-    await this.audit.record({ action: 'auth.mfa_enabled', actorUserId: userId, subjectUserId: userId });
+    await this.db.query('UPDATE user_sessions SET mfa_passed = (id = $2) WHERE user_id = $1', [
+      userId,
+      sessionId,
+    ]);
+    await this.audit.record({
+      action: 'auth.mfa_enabled',
+      actorUserId: userId,
+      subjectUserId: userId,
+    });
   }
 
   async mfaVerify(userId: string, email: string, code: string, sessionId: string) {
@@ -258,8 +352,16 @@ export class AuthService {
   }
 
   async mfaDisable(userId: string, email: string, code: string) {
-    if (!(await this.checkCode(userId, email, code))) throw new BadRequestException('Code is incorrect');
-    await this.db.query('UPDATE users SET mfa_enabled_at = NULL, mfa_secret_enc = NULL WHERE id = $1', [userId]);
-    await this.audit.record({ action: 'auth.mfa_disabled', actorUserId: userId, subjectUserId: userId });
+    if (!(await this.checkCode(userId, email, code)))
+      throw new BadRequestException('Code is incorrect');
+    await this.db.query(
+      'UPDATE users SET mfa_enabled_at = NULL, mfa_secret_enc = NULL WHERE id = $1',
+      [userId],
+    );
+    await this.audit.record({
+      action: 'auth.mfa_disabled',
+      actorUserId: userId,
+      subjectUserId: userId,
+    });
   }
 }

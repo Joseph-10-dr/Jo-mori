@@ -23,12 +23,23 @@ interface Detail {
     schema_version: number;
     delayed: boolean;
   };
-  context: { before: { id: string; event_type: string; occurred_at: string }[]; after: { id: string; event_type: string; occurred_at: string }[] };
+  context: {
+    before: { id: string; event_type: string; occurred_at: string }[];
+    after: { id: string; event_type: string; occurred_at: string }[];
+  };
   related_alerts: { id: string; title: string; severity: Sev; status: string }[];
   note: string;
 }
 
-export function EventDrawer({ id, onClose, onSelect }: { id: string; onClose: () => void; onSelect: (id: string) => void }) {
+export function EventDrawer({
+  id,
+  onClose,
+  onSelect,
+}: {
+  id: string;
+  onClose: () => void;
+  onSelect: (id: string) => void;
+}) {
   const { data, error, loading } = useApi<Detail>(`/v1/events/${id}`);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -64,11 +75,13 @@ export function EventDrawer({ id, onClose, onSelect }: { id: string; onClose: ()
             <dl className="kv">
               <dt>Happened</dt>
               <dd>
-                <Time iso={e.occurred_at} seconds /> <span className="tv-small tv-muted">(device clock)</span>
+                <Time iso={e.occurred_at} seconds />{' '}
+                <span className="tv-small tv-muted">(device clock)</span>
               </dd>
               <dt>Received</dt>
               <dd>
-                <Time iso={e.received_at} seconds /> <span className="tv-small tv-muted">(server)</span>
+                <Time iso={e.received_at} seconds />{' '}
+                <span className="tv-small tv-muted">(server)</span>
               </dd>
               <dt>Device</dt>
               <dd>
@@ -86,7 +99,8 @@ export function EventDrawer({ id, onClose, onSelect }: { id: string; onClose: ()
             </dl>
             {e.delayed && <p className="tv-small tv-muted">{data.note}</p>}
             <p className="tv-small tv-muted">
-              This is what the device reported. It shows that the event happened, not who caused it or why.
+              This is what the device reported. It shows that the event happened, not who caused it
+              or why.
             </p>
             {data.related_alerts.length > 0 && (
               <>
@@ -94,7 +108,8 @@ export function EventDrawer({ id, onClose, onSelect }: { id: string; onClose: ()
                 <ul>
                   {data.related_alerts.map((a) => (
                     <li key={a.id}>
-                      <SeverityBadge severity={a.severity} /> <Link href={`/alerts?id=${a.id}`}>{a.title}</Link> ({a.status})
+                      <SeverityBadge severity={a.severity} />{' '}
+                      <Link href={`/alerts?id=${a.id}`}>{a.title}</Link> ({a.status})
                     </li>
                   ))}
                 </ul>
@@ -102,12 +117,19 @@ export function EventDrawer({ id, onClose, onSelect }: { id: string; onClose: ()
             )}
             <h3>Before and after on this device</h3>
             <ol style={{ paddingLeft: 18 }}>
-              {[...data.context.before, { id: e.id, event_type: e.event_type, occurred_at: e.occurred_at }, ...data.context.after].map((c) => (
+              {[
+                ...data.context.before,
+                { id: e.id, event_type: e.event_type, occurred_at: e.occurred_at },
+                ...data.context.after,
+              ].map((c) => (
                 <li key={c.id} style={{ fontWeight: c.id === e.id ? 700 : 400 }}>
                   {c.id === e.id ? (
                     eventLabel(c.event_type)
                   ) : (
-                    <button className="tv-btn tv-btn--ghost tv-btn--sm" onClick={() => onSelect(c.id)}>
+                    <button
+                      className="tv-btn tv-btn--ghost tv-btn--sm"
+                      onClick={() => onSelect(c.id)}
+                    >
                       {eventLabel(c.event_type)}
                     </button>
                   )}{' '}

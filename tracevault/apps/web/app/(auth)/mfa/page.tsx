@@ -27,17 +27,33 @@ function MfaForm() {
   }
 
   return (
-    <AuthCard title="Two-step verification" subtitle="Enter the 6-digit code from your authenticator app.">
+    <AuthCard
+      title="Two-step verification"
+      subtitle="Enter the 6-digit code from your authenticator app."
+    >
       {error && <Notice tone="error">{error}</Notice>}
       <form onSubmit={submit}>
         <Field label="Code" htmlFor="code">
-          <input className="tv-input" id="code" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]{6,7}" required autoFocus />
+          <input
+            className="tv-input"
+            id="code"
+            name="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9 ]{6,7}"
+            required
+            autoFocus
+          />
         </Field>
         <div className="tv-row">
           <Button variant="primary" type="submit">
             Verify
           </Button>
-          <Button type="button" variant="ghost" onClick={() => session.logout().then(() => router.replace('/login'))}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => session.logout().then(() => router.replace('/login'))}
+          >
             Cancel
           </Button>
         </div>

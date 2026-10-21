@@ -5,7 +5,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: { default: 'TraceVault', template: '%s · TraceVault' },
-  description: 'Searchable security history for your devices, with transparent, consent-based evidence capture.',
+  description:
+    'Searchable security history for your devices, with transparent, consent-based evidence capture.',
 };
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1 };

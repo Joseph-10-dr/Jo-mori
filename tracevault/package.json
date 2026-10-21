@@ -11,7 +11,7 @@
     "typecheck": "pnpm -r run typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"tests/**/*.ts\"",
     "test": "pnpm -r run test",
     "db:migrate": "pnpm --filter @tracevault/api run db:migrate",
     "dev:api": "pnpm --filter @tracevault/api run dev",

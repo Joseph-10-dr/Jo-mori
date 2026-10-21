@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-const DB = process.env.E2E_DATABASE_URL ?? 'postgres://tracevault:tracevault@localhost:5432/tracevault_e2e';
+const DB =
+  process.env.E2E_DATABASE_URL ?? 'postgres://tracevault:tracevault@localhost:5432/tracevault_e2e';
 export const API = 'http://localhost:4100';
 export const WEB = 'http://localhost:3100';
 
@@ -18,7 +19,9 @@ export default defineConfig({
     baseURL: WEB,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
+    launchOptions: process.env.PW_CHROMIUM_PATH
+      ? { executablePath: process.env.PW_CHROMIUM_PATH }
+      : {},
   },
   outputDir: '../../test-results/e2e',
   webServer: [
@@ -39,7 +42,8 @@ export default defineConfig({
       },
     },
     {
-      command: 'pnpm --filter @tracevault/web build && pnpm --filter @tracevault/web exec next start -p 3100',
+      command:
+        'pnpm --filter @tracevault/web build && pnpm --filter @tracevault/web exec next start -p 3100',
       cwd: '../..',
       url: WEB,
       timeout: 240_000,

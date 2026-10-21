@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Inject,
+  NotFoundException,
+  Param,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
@@ -72,7 +84,11 @@ export class AuthController {
   @Throttle(strictLimit)
   @Post('login')
   @HttpCode(200)
-  async login(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const dto = parse(z.object({ email, password: z.string().min(1).max(128) }), body);
     const s = await this.auth.login({
       email: dto.email,
@@ -162,8 +178,16 @@ export class AuthController {
   @Post('password/change')
   @HttpCode(200)
   async change(@CurrentUser() user: UserAuth, @Body() body: unknown) {
-    const dto = parse(z.object({ current_password: z.string().min(1).max(128), new_password: password }), body);
-    await this.auth.changePassword(user.userId, dto.current_password, dto.new_password, user.sessionId);
+    const dto = parse(
+      z.object({ current_password: z.string().min(1).max(128), new_password: password }),
+      body,
+    );
+    await this.auth.changePassword(
+      user.userId,
+      dto.current_password,
+      dto.new_password,
+      user.sessionId,
+    );
     return { ok: true };
   }
 

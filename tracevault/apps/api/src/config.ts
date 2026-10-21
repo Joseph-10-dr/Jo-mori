@@ -72,7 +72,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (mode === 'production' && mailProvider === 'outbox') {
     throw new Error('MAIL_PROVIDER=outbox is for development only; configure a real mail provider');
   }
-  const databaseUrl = env.DATABASE_URL || 'postgres://tracevault:tracevault@localhost:5432/tracevault';
+  const databaseUrl =
+    env.DATABASE_URL || 'postgres://tracevault:tracevault@localhost:5432/tracevault';
   return {
     env: mode,
     port: Number(env.PORT || 4000),

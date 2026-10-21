@@ -40,7 +40,8 @@ export class AppModule {
           // Automated tests make many logins from one IP; they opt in to
           // rate limiting explicitly with this header to test the real limits.
           skipIf: (ctx) =>
-            config.env === 'test' && ctx.switchToHttp().getRequest().headers['x-test-rate-limit'] !== 'on',
+            config.env === 'test' &&
+            ctx.switchToHttp().getRequest().headers['x-test-rate-limit'] !== 'on',
         }),
       ],
       controllers: [

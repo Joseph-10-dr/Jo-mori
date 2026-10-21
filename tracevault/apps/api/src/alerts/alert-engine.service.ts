@@ -31,7 +31,17 @@ interface DeviceRef {
 
 type InsertedEvent = ValidatedEvent & { id: string };
 
-const SECURITY_CONTROLS = ['firewall', 'antivirus', 'defender', 'real_time_protection', 'screen_lock', 'disk_encryption', 'uac', 'gatekeeper', 'sip'];
+const SECURITY_CONTROLS = [
+  'firewall',
+  'antivirus',
+  'defender',
+  'real_time_protection',
+  'screen_lock',
+  'disk_encryption',
+  'uac',
+  'gatekeeper',
+  'sip',
+];
 const FAILED_LOGIN_THRESHOLD = 5;
 const FAILED_LOGIN_WINDOW_MIN = 10;
 
@@ -100,7 +110,11 @@ export class AlertEngine {
   }
 
   async evaluate(device: DeviceRef, events: InsertedEvent[], client?: Queryable): Promise<void> {
-    const base = { ownerUserId: device.owner_user_id, organizationId: device.organization_id, deviceId: device.id };
+    const base = {
+      ownerUserId: device.owner_user_id,
+      organizationId: device.organization_id,
+      deviceId: device.id,
+    };
     for (const e of events) {
       const m = e.metadata as Record<string, unknown>;
       const when = new Date(e.occurred_at).toISOString();
@@ -115,7 +129,8 @@ export class AlertEngine {
               confidence: 'confirmed',
               evidenceEventIds: [e.id],
               explanation: `The operating system reported that a local account${m.account_name ? ` "${String(m.account_name)}"` : ''} was created on ${device.name} at ${when}. This is a recorded system event; it does not by itself show who created it or why.`,
-              recommendedAction: 'If you did not create this account, remove it, change your device password and review other recent events on this device.',
+              recommendedAction:
+                'If you did not create this account, remove it, change your device password and review other recent events on this device.',
               dedupeKey: `evt:${e.id}`,
             },
             client,
@@ -131,7 +146,8 @@ export class AlertEngine {
               confidence: 'confirmed',
               evidenceEventIds: [e.id],
               explanation: `The operating system reported that administrator privileges were granted${m.account_name ? ` to "${String(m.account_name)}"` : ''} at ${when}.`,
-              recommendedAction: 'Confirm the change was intended. If not, remove the privilege and review accounts on the device.',
+              recommendedAction:
+                'Confirm the change was intended. If not, remove the privilege and review accounts on the device.',
               dedupeKey: `evt:${e.id}`,
             },
             client,
@@ -146,7 +162,9 @@ export class AlertEngine {
             {
               ...base,
               rule: 'security_setting_changed',
-              title: weakened ? `${setting} was turned off on ${device.name}` : `Security setting changed on ${device.name}`,
+              title: weakened
+                ? `${setting} was turned off on ${device.name}`
+                : `Security setting changed on ${device.name}`,
               severity: weakened ? 'high' : 'medium',
               confidence: 'confirmed',
               evidenceEventIds: [e.id],
@@ -171,7 +189,8 @@ export class AlertEngine {
                 confidence: 'likely',
                 evidenceEventIds: [e.id],
                 explanation: `The agent reported it stopped at ${when} (reason: ${String(m.reason ?? 'not given')}). Activity after this time may not have been recorded.`,
-                recommendedAction: 'Check that TraceVault is running on the device and that its permissions have not been removed.',
+                recommendedAction:
+                  'Check that TraceVault is running on the device and that its permissions have not been removed.',
                 dedupeKey: `evt:${e.id}`,
               },
               client,
@@ -189,7 +208,8 @@ export class AlertEngine {
                 confidence: 'confirmed',
                 evidenceEventIds: [e.id],
                 explanation: `Permission "${String(m.permission ?? 'unknown')}" was reported as removed at ${when}. Events that depend on it will no longer be recorded.`,
-                recommendedAction: 'If you did not remove it, re-grant the permission in the device settings.',
+                recommendedAction:
+                  'If you did not remove it, re-grant the permission in the device settings.',
                 dedupeKey: `evt:${e.id}`,
               },
               client,
@@ -226,7 +246,9 @@ export class AlertEngine {
         client,
       );
       if (recent.length >= FAILED_LOGIN_THRESHOLD) {
-        const bucket = Math.floor(recent[0].occurred_at.getTime() / (FAILED_LOGIN_WINDOW_MIN * 60_000));
+        const bucket = Math.floor(
+          recent[0].occurred_at.getTime() / (FAILED_LOGIN_WINDOW_MIN * 60_000),
+        );
         await this.create(
           {
             ...base,
@@ -236,7 +258,8 @@ export class AlertEngine {
             confidence: 'likely',
             evidenceEventIds: recent.slice(0, 20).map((r) => r.id),
             explanation: `${recent.length} failed sign-in attempts were recorded within ${FAILED_LOGIN_WINDOW_MIN} minutes. This pattern can mean someone was guessing the password, but it can also be a mistyped password or a saved password that changed.`,
-            recommendedAction: 'If you were not trying to sign in, use a stronger device password and check whether a successful sign-in followed.',
+            recommendedAction:
+              'If you were not trying to sign in, use a stronger device password and check whether a successful sign-in followed.',
             dedupeKey: `burst:${device.id}:${bucket}`,
           },
           client,

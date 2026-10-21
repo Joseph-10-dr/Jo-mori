@@ -29,7 +29,13 @@ export interface SummaryAlert {
 export interface SummaryInput {
   question: string;
   window: { from: Date; to: Date; label: string };
-  devices: { id: string; name: string; platform: string; monitoring_status: string; last_seen_at: Date | null }[];
+  devices: {
+    id: string;
+    name: string;
+    platform: string;
+    monitoring_status: string;
+    last_seen_at: Date | null;
+  }[];
   events: SummaryEvent[];
   alerts: SummaryAlert[];
   truncated: boolean;
@@ -48,7 +54,14 @@ export interface SummaryOutput {
   window: { from: string; to: string; label: string };
   headline: string;
   statements: Statement[];
-  evidence: { id: string; event_type: string; label: string; device_name: string; occurred_at: string; severity: string }[];
+  evidence: {
+    id: string;
+    event_type: string;
+    label: string;
+    device_name: string;
+    occurred_at: string;
+    severity: string;
+  }[];
   completeness: string;
 }
 
@@ -61,7 +74,9 @@ export interface SummaryOutput {
  */
 export interface SummaryProvider {
   readonly name: string;
-  summarize(input: SummaryInput): Promise<Omit<SummaryOutput, 'evidence' | 'window' | 'question' | 'provider'>>;
+  summarize(
+    input: SummaryInput,
+  ): Promise<Omit<SummaryOutput, 'evidence' | 'window' | 'question' | 'provider'>>;
 }
 
 const NOTABLE: EventType[] = [
@@ -83,7 +98,11 @@ const fmt = (d: Date) => d.toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
 
 /** Quotes untrusted metadata as data: trimmed, length-capped, no newlines. */
 function quote(v: unknown): string {
-  return JSON.stringify(String(v ?? '').replace(/\s+/g, ' ').slice(0, 80));
+  return JSON.stringify(
+    String(v ?? '')
+      .replace(/\s+/g, ' ')
+      .slice(0, 80),
+  );
 }
 
 export class DeterministicSummaryProvider implements SummaryProvider {
@@ -128,7 +147,8 @@ export class DeterministicSummaryProvider implements SummaryProvider {
       const detail = sample
         .map((e) => {
           const m = e.metadata;
-          const what = m.setting ?? m.account_name ?? m.application ?? m.permission ?? m.path ?? m.reason;
+          const what =
+            m.setting ?? m.account_name ?? m.application ?? m.permission ?? m.path ?? m.reason;
           return `${fmt(e.occurred_at)}${what !== undefined ? ` (${quote(what)})` : ''}`;
         })
         .join('; ');
@@ -143,7 +163,10 @@ export class DeterministicSummaryProvider implements SummaryProvider {
     const failures = events.filter((e) => e.event_type === 'login_failed');
     for (const login of events.filter((e) => e.event_type === 'user_login')) {
       const prior = failures.filter(
-        (f) => f.device_id === login.device_id && f.occurred_at < login.occurred_at && login.occurred_at.getTime() - f.occurred_at.getTime() < 15 * 60_000,
+        (f) =>
+          f.device_id === login.device_id &&
+          f.occurred_at < login.occurred_at &&
+          login.occurred_at.getTime() - f.occurred_at.getTime() < 15 * 60_000,
       );
       if (prior.length >= 3) {
         statements.push({
@@ -163,7 +186,9 @@ export class DeterministicSummaryProvider implements SummaryProvider {
     }
 
     // Gaps: delayed uploads, monitoring not active, long silences.
-    const delayed = events.filter((e) => e.received_at.getTime() - e.occurred_at.getTime() > 5 * 60_000);
+    const delayed = events.filter(
+      (e) => e.received_at.getTime() - e.occurred_at.getTime() > 5 * 60_000,
+    );
     if (delayed.length) {
       statements.push({
         kind: 'gap',
@@ -173,7 +198,11 @@ export class DeterministicSummaryProvider implements SummaryProvider {
     }
     for (const d of devices) {
       if (d.monitoring_status !== 'active') {
-        statements.push({ kind: 'gap', text: `Monitoring on ${d.name} is currently ${d.monitoring_status}, so some activity may not be recorded.`, event_ids: [] });
+        statements.push({
+          kind: 'gap',
+          text: `Monitoring on ${d.name} is currently ${d.monitoring_status}, so some activity may not be recorded.`,
+          event_ids: [],
+        });
       }
       const devEvents = events.filter((e) => e.device_id === d.id);
       for (let i = 1; i < devEvents.length; i++) {
@@ -188,7 +217,11 @@ export class DeterministicSummaryProvider implements SummaryProvider {
       }
     }
     if (input.truncated) {
-      statements.push({ kind: 'gap', text: 'Only the most recent 500 events in this period were analysed; narrow the time range for a complete summary.', event_ids: [] });
+      statements.push({
+        kind: 'gap',
+        text: 'Only the most recent 500 events in this period were analysed; narrow the time range for a complete summary.',
+        event_ids: [],
+      });
     }
     statements.push({
       kind: 'gap',
@@ -204,7 +237,13 @@ export class DeterministicSummaryProvider implements SummaryProvider {
         event_ids: [],
       });
     }
-    if (events.some((e) => ['local_account_created', 'privilege_granted', 'security_setting_changed'].includes(e.event_type))) {
+    if (
+      events.some((e) =>
+        ['local_account_created', 'privilege_granted', 'security_setting_changed'].includes(
+          e.event_type,
+        ),
+      )
+    ) {
       statements.push({
         kind: 'advice',
         text: 'Review the accounts and security settings listed above on the device itself and undo anything you did not change.',
@@ -212,7 +251,9 @@ export class DeterministicSummaryProvider implements SummaryProvider {
       });
     }
 
-    const notableCount = events.filter((e) => ['medium', 'high', 'critical'].includes(e.severity)).length + alerts.length;
+    const notableCount =
+      events.filter((e) => ['medium', 'high', 'critical'].includes(e.severity)).length +
+      alerts.length;
     const headline =
       events.length === 0
         ? 'Nothing was recorded in this period.'
@@ -222,28 +263,55 @@ export class DeterministicSummaryProvider implements SummaryProvider {
     return {
       headline,
       statements,
-      completeness: input.truncated ? 'partial' : events.length ? 'complete for recorded event types' : 'no data',
+      completeness: input.truncated
+        ? 'partial'
+        : events.length
+          ? 'complete for recorded event types'
+          : 'no data',
     };
   }
 }
 
 /** Parses simple time phrases; anything else falls back to the last 24 hours. */
-export function resolveWindow(question: string, now = new Date(), explicit?: { from?: string; to?: string }) {
-  if (explicit?.from && explicit?.to) return { from: new Date(explicit.from), to: new Date(explicit.to), label: 'selected period' };
+export function resolveWindow(
+  question: string,
+  now = new Date(),
+  explicit?: { from?: string; to?: string },
+) {
+  if (explicit?.from && explicit?.to)
+    return { from: new Date(explicit.from), to: new Date(explicit.to), label: 'selected period' };
   const q = question.toLowerCase();
-  const startOfDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const startOfDay = (d: Date) =>
+    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const today = startOfDay(now);
   const day = 86_400_000;
   if (/yesterday/.test(q)) {
     const y = new Date(today.getTime() - day);
-    if (/afternoon/.test(q)) return { from: new Date(y.getTime() + 12 * 3600_000), to: new Date(y.getTime() + 18 * 3600_000), label: 'yesterday afternoon (12:00–18:00 UTC)' };
-    if (/morning/.test(q)) return { from: new Date(y.getTime() + 6 * 3600_000), to: new Date(y.getTime() + 12 * 3600_000), label: 'yesterday morning (06:00–12:00 UTC)' };
-    if (/evening|night/.test(q)) return { from: new Date(y.getTime() + 18 * 3600_000), to: today, label: 'yesterday evening (18:00–24:00 UTC)' };
+    if (/afternoon/.test(q))
+      return {
+        from: new Date(y.getTime() + 12 * 3600_000),
+        to: new Date(y.getTime() + 18 * 3600_000),
+        label: 'yesterday afternoon (12:00–18:00 UTC)',
+      };
+    if (/morning/.test(q))
+      return {
+        from: new Date(y.getTime() + 6 * 3600_000),
+        to: new Date(y.getTime() + 12 * 3600_000),
+        label: 'yesterday morning (06:00–12:00 UTC)',
+      };
+    if (/evening|night/.test(q))
+      return {
+        from: new Date(y.getTime() + 18 * 3600_000),
+        to: today,
+        label: 'yesterday evening (18:00–24:00 UTC)',
+      };
     return { from: y, to: today, label: 'yesterday (UTC)' };
   }
   if (/today/.test(q)) return { from: today, to: now, label: 'today (UTC)' };
-  if (/week|7 days/.test(q)) return { from: new Date(now.getTime() - 7 * day), to: now, label: 'last 7 days' };
-  if (/month|30 days/.test(q)) return { from: new Date(now.getTime() - 30 * day), to: now, label: 'last 30 days' };
+  if (/week|7 days/.test(q))
+    return { from: new Date(now.getTime() - 7 * day), to: now, label: 'last 7 days' };
+  if (/month|30 days/.test(q))
+    return { from: new Date(now.getTime() - 30 * day), to: now, label: 'last 30 days' };
   return { from: new Date(now.getTime() - day), to: now, label: 'last 24 hours' };
 }
 
@@ -272,7 +340,11 @@ export class SummaryService {
         [scope.userId, scope.viewAllOrgIds, req.alert_id],
       );
       if (a) {
-        window = { from: new Date(a.created_at.getTime() - 2 * 3600_000), to: new Date(a.created_at.getTime() + 3600_000), label: 'two hours before to one hour after the alert' };
+        window = {
+          from: new Date(a.created_at.getTime() - 2 * 3600_000),
+          to: new Date(a.created_at.getTime() + 3600_000),
+          label: 'two hours before to one hour after the alert',
+        };
         deviceFilter = a.device_id ?? deviceFilter;
       }
     }
@@ -298,17 +370,32 @@ export class SummaryService {
       [ids, window.from, window.to],
     );
     // 4–5: structured input to the provider.
-    const out = await this.provider.summarize({ question: req.question, window, devices, events: used, alerts, truncated });
+    const out = await this.provider.summarize({
+      question: req.question,
+      window,
+      devices,
+      events: used,
+      alerts,
+      truncated,
+    });
     // 6: drop any citation that is not in the retrieved, authorized set.
     const known = new Set(used.map((e) => e.id));
-    const statements = out.statements.map((s) => ({ ...s, event_ids: s.event_ids.filter((id) => known.has(id)) }));
+    const statements = out.statements.map((s) => ({
+      ...s,
+      event_ids: s.event_ids.filter((id) => known.has(id)),
+    }));
     const cited = new Set(statements.flatMap((s) => s.event_ids));
     // 8: audit the investigation.
     await this.audit.record({
       action: 'summary.generated',
       actorUserId: user.userId,
       subjectUserId: user.userId,
-      details: { provider: this.provider.name, window: window.label, device_id: deviceFilter, events: used.length },
+      details: {
+        provider: this.provider.name,
+        window: window.label,
+        device_id: deviceFilter,
+        events: used.length,
+      },
     });
     await this.usage.add({ userId: user.userId, organizationId: null }, 'summaries_generated', 1);
     return {
@@ -319,7 +406,14 @@ export class SummaryService {
       statements,
       evidence: used
         .filter((e) => cited.has(e.id))
-        .map((e) => ({ id: e.id, event_type: e.event_type, label: EVENT_TYPES[e.event_type] ?? e.event_type, device_name: e.device_name, occurred_at: e.occurred_at.toISOString(), severity: e.severity })),
+        .map((e) => ({
+          id: e.id,
+          event_type: e.event_type,
+          label: EVENT_TYPES[e.event_type] ?? e.event_type,
+          device_name: e.device_name,
+          occurred_at: e.occurred_at.toISOString(),
+          severity: e.severity,
+        })),
       completeness: out.completeness,
     };
   }

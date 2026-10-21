@@ -15,14 +15,25 @@ interface SessionState {
 const Ctx = createContext<SessionState | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<Omit<SessionState, 'refresh' | 'logout'>>({ status: 'loading', user: null, memberships: [] });
+  const [state, setState] = useState<Omit<SessionState, 'refresh' | 'logout'>>({
+    status: 'loading',
+    user: null,
+    memberships: [],
+  });
 
   const refresh = useCallback(async () => {
     try {
-      const me = await api<{ user: User; memberships: Membership[]; mfa_pending: boolean }>('/v1/auth/me');
-      setState({ status: me.mfa_pending ? 'mfa-pending' : 'signed-in', user: me.user, memberships: me.memberships });
+      const me = await api<{ user: User; memberships: Membership[]; mfa_pending: boolean }>(
+        '/v1/auth/me',
+      );
+      setState({
+        status: me.mfa_pending ? 'mfa-pending' : 'signed-in',
+        user: me.user,
+        memberships: me.memberships,
+      });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) setState({ status: 'signed-out', user: null, memberships: [] });
+      if (err instanceof ApiError && err.status === 401)
+        setState({ status: 'signed-out', user: null, memberships: [] });
       else setState((s) => ({ ...s, status: s.user ? s.status : 'signed-out' }));
     }
   }, []);
@@ -49,7 +60,10 @@ export function useSession(): SessionState {
 }
 
 /** Loads data from the API with loading/error state and a reload function. */
-export function useApi<T>(path: string | null, query?: Record<string, string | number | undefined>) {
+export function useApi<T>(
+  path: string | null,
+  query?: Record<string, string | number | undefined>,
+) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(!!path);
